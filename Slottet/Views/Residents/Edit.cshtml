@@ -1,0 +1,89 @@
+@model Slottet.Models.Resident
+
+@{
+    ViewData["Title"] = "Rediger - " + Model.Name;
+}
+
+<h1>Rediger Beboer</h1>
+<p class="text-muted">@Model.Name</p>
+
+<hr />
+
+<div class="row">
+    <div class="col-md-8">
+        <form asp-action="Edit" method="post">
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="CreatedAt" />
+            
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            
+            <div class="mb-3">
+                <label asp-for="CPR" class="form-label"></label>
+                <input asp-for="CPR" class="form-control" maxlength="10" />
+                <span asp-validation-for="CPR" class="text-danger"></span>
+            </div>
+            
+            <div class="mb-3">
+                <label asp-for="DateOfBirth" class="form-label"></label>
+                <input asp-for="DateOfBirth" class="form-control" type="date" />
+                <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+            </div>
+            
+            <div class="mb-3">
+                <label asp-for="RoomNumber" class="form-label"></label>
+                <input asp-for="RoomNumber" class="form-control" />
+                <span asp-validation-for="RoomNumber" class="text-danger"></span>
+            </div>
+            
+            <div class="mb-3">
+                <label asp-for="AdmissionDate" class="form-label"></label>
+                <input asp-for="AdmissionDate" class="form-control" type="date" />
+                <span asp-validation-for="AdmissionDate" class="text-danger"></span>
+            </div>
+            
+            <div class="mb-3">
+                <label asp-for="MedicalNotes" class="form-label"></label>
+                <textarea asp-for="MedicalNotes" class="form-control" rows="4"></textarea>
+                <span asp-validation-for="MedicalNotes" class="text-danger"></span>
+            </div>
+            
+            <div class="mb-3 form-check">
+                <input asp-for="IsActive" class="form-check-input" />
+                <label asp-for="IsActive" class="form-check-label"></label>
+            </div>
+            
+            <div class="mb-3">
+                <button type="submit" class="btn btn-primary">Gem Ændringer</button>
+                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">Annuller</a>
+                <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger float-end">Slet</a>
+            </div>
+        </form>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Ændringshistorik</h5>
+            </div>
+            <div class="card-body">
+                <p><small class="text-muted">
+                    <strong>Oprettet:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")<br/>
+                    @if (Model.UpdatedAt.HasValue)
+                    {
+                        <strong>Senest opdateret:</strong> @Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                    }
+                </small></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

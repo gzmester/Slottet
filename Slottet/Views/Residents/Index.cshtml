@@ -1,0 +1,113 @@
+@model IEnumerable<Slottet.Models.Resident>
+
+@{
+    ViewData["Title"] = "Beboere";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Beboere</h1>
+    <a asp-action="Create" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Tilføj Beboer
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        <h4>Ingen beboere fundet</h4>
+        <p>Klik på "Tilføj Beboer" for at oprette den første beboer.</p>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Navn</th>
+                    <th>Værelse</th>
+                    <th>Fødselsdato</th>
+                    <th>Alder</th>
+                    <th>Indflyttet</th>
+                    <th>Status</th>
+                    <th>Handlinger</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var resident in Model)
+                {
+                    var age = DateTime.Today.Year - resident.DateOfBirth.Year;
+                    if (resident.DateOfBirth.Date > DateTime.Today.AddYears(-age)) age--;
+                    
+                    <tr>
+                        <td>
+                            <strong>@resident.Name</strong><br/>
+                            @if (!string.IsNullOrEmpty(resident.CPR))
+                            {
+                                <small class="text-muted">CPR: @resident.CPR</small>
+                            }
+                        </td>
+                        <td>@resident.RoomNumber</td>
+                        <td>@resident.DateOfBirth.ToShortDateString()</td>
+                        <td>@age år</td>
+                        <td>@resident.AdmissionDate.ToShortDateString()</td>
+                        <td>
+                            @if (resident.IsActive)
+                            {
+                                <span class="badge bg-success">Aktiv</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inaktiv</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a asp-action="Details" asp-route-id="@resident.Id" class="btn btn-sm btn-info" title="Detaljer">
+                                    👁️ Detaljer
+                                </a>
+                                <a asp-action="Edit" asp-route-id="@resident.Id" class="btn btn-sm btn-warning" title="Rediger">
+                                    ✏️ Rediger
+                                </a>
+                                <a asp-controller="Medications" asp-action="ForResident" asp-route-id="@resident.Id" class="btn btn-sm btn-primary" title="Medicin">
+                                    💊 Medicin
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@section Scripts {
+    @*
+    EKSEMPLER PÅ JAVASCRIPT FUNKTIONALITET:
+    
+    <script>
+        // 1. Søgning i tabellen med AJAX
+        $('#searchInput').on('keyup', function() {
+            var value = $(this).val().toLowerCase();
+            $('tbody tr').filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+        
+        // 2. Bulk selection
+        $('#selectAll').on('change', function() {
+            $('.resident-checkbox').prop('checked', this.checked);
+        });
+        
+        // 3. Live opdatering med SignalR
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/residentHub")
+            .build();
+            
+        connection.on("ResidentUpdated", function (residentId) {
+            // Reload data for resident
+            loadResidentRow(residentId);
+        });
+    </script>
+    *@
+}

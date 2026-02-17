@@ -1,0 +1,46 @@
+@model Slottet.Models.Resident
+
+@{
+    ViewData["Title"] = "Slet Beboer";
+}
+
+<h1 class="text-danger">Slet Beboer</h1>
+
+<div class="alert alert-danger">
+    <h4>Er du sikker på, at du vil slette denne beboer?</h4>
+    <p>Denne handling kan ikke fortrydes!</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>@Model.Name</h3>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">CPR</dt>
+            <dd class="col-sm-9">@Model.CPR</dd>
+            
+            <dt class="col-sm-3">Værelse</dt>
+            <dd class="col-sm-9">@Model.RoomNumber</dd>
+            
+            <dt class="col-sm-3">Fødselsdato</dt>
+            <dd class="col-sm-9">@Model.DateOfBirth.ToShortDateString()</dd>
+            
+            <dt class="col-sm-3">Indflyttet</dt>
+            <dd class="col-sm-9">@Model.AdmissionDate.ToShortDateString()</dd>
+        </dl>
+        
+        @if (Model.Medications.Any())
+        {
+            <div class="alert alert-warning">
+                <strong>⚠️ Advarsel:</strong> Denne beboer har @Model.Medications.Count medicin tilknyttet. Disse vil også blive slettet!
+            </div>
+        }
+    </div>
+</div>
+
+<form asp-action="Delete" method="post" class="mt-3">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Ja, slet beboer</button>
+    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">Annuller</a>
+</form>

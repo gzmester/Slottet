@@ -1,0 +1,140 @@
+@model Slottet.Models.Resident
+
+@{
+    ViewData["Title"] = "Detaljer - " + Model.Name;
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <h1>@Model.Name</h1>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h4>Beboer Information</h4>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">CPR</dt>
+                    <dd class="col-sm-9">@Model.CPR</dd>
+                    
+                    <dt class="col-sm-3">Fødselsdato</dt>
+                    <dd class="col-sm-9">@Model.DateOfBirth.ToLongDateString()</dd>
+                    
+                    <dt class="col-sm-3">Alder</dt>
+                    <dd class="col-sm-9">
+                        @{
+                            var age = DateTime.Today.Year - Model.DateOfBirth.Year;
+                            if (Model.DateOfBirth.Date > DateTime.Today.AddYears(-age)) age--;
+                        }
+                        @age år
+                    </dd>
+                    
+                    <dt class="col-sm-3">Værelse</dt>
+                    <dd class="col-sm-9">@Model.RoomNumber</dd>
+                    
+                    <dt class="col-sm-3">Indflyttet</dt>
+                    <dd class="col-sm-9">@Model.AdmissionDate.ToLongDateString()</dd>
+                    
+                    <dt class="col-sm-3">Status</dt>
+                    <dd class="col-sm-9">
+                        @if (Model.IsActive)
+                        {
+                            <span class="badge bg-success">Aktiv</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inaktiv</span>
+                        }
+                    </dd>
+                    
+                    @if (!string.IsNullOrEmpty(Model.MedicalNotes))
+                    {
+                        <dt class="col-sm-3">Medicinske Noter</dt>
+                        <dd class="col-sm-9">
+                            <div class="alert alert-warning">
+                                @Model.MedicalNotes
+                            </div>
+                        </dd>
+                    }
+                </dl>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h4>Medicin</h4>
+            </div>
+            <div class="card-body">
+                @if (Model.Medications.Any())
+                {
+                    <ul class="list-group">
+                        @foreach (var med in Model.Medications.Where(m => m.IsActive))
+                        {
+                            <li class="list-group-item">
+                                <strong>@med.Name</strong> - @med.Dosage
+                                <br/>
+                                <small class="text-muted">@med.Frequency</small>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p>Ingen aktiv medicin.</p>
+                }
+                <a asp-controller="Medications" asp-action="ForResident" asp-route-id="@Model.Id" class="btn btn-primary mt-2">
+                    Se al medicin
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Handlinger</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                        ✏️ Rediger
+                    </a>
+                    <a asp-controller="Medications" asp-action="Create" asp-route-residentId="@Model.Id" class="btn btn-primary">
+                        💊 Tilføj Medicin
+                    </a>
+                    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
+                        🗑️ Slet
+                    </a>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        ← Tilbage til liste
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5>System Info</h5>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <p><strong>Oprettet:</strong> @Model.CreatedAt.ToShortDateString()</p>
+                    @if (Model.UpdatedAt.HasValue)
+                    {
+                        <p><strong>Opdateret:</strong> @Model.UpdatedAt.Value.ToShortDateString()</p>
+                    }
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* EKSEMPLER PÅ HVAD MAN KUNNE TILFØJE:
+ * 
+ * 1. Aktivitetslog / Timeline
+ * 2. Dokumenter og billeder
+ * 3. Pårørende kontaktinformation
+ * 4. Aftaler og kalendar
+ * 5. Journal noter
+ * 6. Plejeplan
+ *@

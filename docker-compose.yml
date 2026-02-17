@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: slottet-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=SlottetRoot123!
+      - MYSQL_DATABASE=SlottetDb
+      - MYSQL_USER=slottet
+      - MYSQL_PASSWORD=Slottet123!
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - slottet-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pSlottetRoot123!"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    command: --default-authentication-plugin=mysql_native_password
+
+  # Slottet Application
+  slottet-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: slottet-app
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=mysql;Port=3306;Database=SlottetDb;User=slottet;Password=Slottet123!;SslMode=None;
+    ports:
+      - "5000:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - slottet-network
+    restart: unless-stopped
+
+networks:
+  slottet-network:
+    driver: bridge
+
+volumes:
+  mysql-data:

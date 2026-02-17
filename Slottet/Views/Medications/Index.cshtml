@@ -1,0 +1,70 @@
+@{
+    ViewData["Title"] = "Medicin Oversigt";
+}
+
+<h1>Medicin Oversigt</h1>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="alert alert-info">
+            <h4>📋 Medicin System</h4>
+            <p>
+                Her kan du administrere medicin for alle beboere. 
+                Vælg en beboer for at se deres medicin eller tilføje ny.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a asp-controller="Residents" asp-action="Index" class="btn btn-primary">
+                    👥 Gå til Beboere
+                </a>
+                <p class="mt-2"><small class="text-muted">Vælg en beboer for at se deres medicin</small></p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>📊 Kommende Features</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li>✅ Se medicin pr. beboer</li>
+                    <li>✅ Log medicinudlevering</li>
+                    <li>⏳ Påmindelser om medicin</li>
+                    <li>⏳ FMK integration</li>
+                    <li>⏳ Månedlige rapporter</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* EKSEMPLER PÅ HVAD MAN KUNNE VISE HER:
+ * 
+ * 1. Dashboard med dagens medicin:
+ *    - Vis alle medicin der skal gives i dag
+ *    - Hvem har fået/ikke fået
+ *    - Quick log funktion
+ * 
+ * 2. Oversigt over al aktiv medicin på tværs af beboere
+ * 
+ * 3. Advarsler og alerts:
+ *    - Medicin der snart løber ud
+ *    - Konflikter mellem medicin
+ *    - Manglende log indtastninger
+ * 
+ * 4. Statistik:
+ *    - Total antal aktive medicinordinationer
+ *    - Gennemsnitlig medicin pr. beboer
+ *    - Mest brugte medicin typer
+ *@

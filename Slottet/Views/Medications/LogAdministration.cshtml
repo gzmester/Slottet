@@ -1,0 +1,134 @@
+@model Slottet.Models.MedicationLog
+
+@{
+    ViewData["Title"] = "Log Medicinudlevering";
+    var medicationName = (string)ViewBag.MedicationName;
+    var residentName = (string)ViewBag.ResidentName;
+}
+
+<h1>Log Medicinudlevering</h1>
+
+<div class="alert alert-info">
+    <h5>📋 Information</h5>
+    <p class="mb-0">
+        <strong>Beboer:</strong> @residentName<br/>
+        <strong>Medicin:</strong> @medicationName<br/>
+        <strong>Tidspunkt:</strong> @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+    </p>
+</div>
+
+<hr />
+
+<div class="row">
+    <div class="col-md-8">
+        <form asp-action="LogAdministration" method="post">
+            <input type="hidden" asp-for="MedicationId" />
+            <input type="hidden" asp-for="AdministeredAt" />
+            
+            @* I praksis skal AdministeredById sættes til den aktuelle bruger *@
+            <div class="mb-3">
+                <label asp-for="AdministeredById" class="form-label">Udleveret af (Personale ID)</label>
+                <input asp-for="AdministeredById" class="form-control" value="1" />
+                <span asp-validation-for="AdministeredById" class="text-danger"></span>
+                <small class="form-text text-muted">I produktion vil dette automatisk være den loggede bruger</small>
+            </div>
+            
+            <div class="mb-3">
+                <label asp-for="Notes" class="form-label">Noter (valgfrit)</label>
+                <textarea asp-for="Notes" class="form-control" rows="3" placeholder="Evt. bemærkninger om udleveringen..."></textarea>
+                <span asp-validation-for="Notes" class="text-danger"></span>
+            </div>
+            
+            <div class="mb-3 form-check">
+                <input asp-for="WasSkipped" class="form-check-input" id="wasSkipped" />
+                <label asp-for="WasSkipped" class="form-check-label" for="wasSkipped">
+                    Medicinen blev IKKE givet (spring over)
+                </label>
+            </div>
+            
+            <div class="mb-3" id="skipReasonDiv" style="display: none;">
+                <label asp-for="SkipReason" class="form-label">Årsag til at springe over</label>
+                <textarea asp-for="SkipReason" class="form-control" rows="2" placeholder="fx beboer nægter, kvalme, etc."></textarea>
+                <span asp-validation-for="SkipReason" class="text-danger"></span>
+            </div>
+            
+            <div class="mb-3">
+                <button type="submit" class="btn btn-success">✅ Bekræft & Log</button>
+                <a href="javascript:history.back()" class="btn btn-secondary">Annuller</a>
+            </div>
+        </form>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-warning">
+                <h5>⚠️ Vigtigt</h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    Sørg for at medicinen er givet INDEN du logger den her.
+                </p>
+                <p>
+                    Hvis beboeren nægter eller medicinen ikke kan gives af andre årsager, 
+                    marker "Blev ikke givet" og angiv årsag.
+                </p>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5>📜 Seneste logs</h5>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">Historik kommer her...</p>
+                @* I praksis: Vis de sidste 5 logs for denne medicin *@
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Vis/skjul årsag felt afhængig af WasSkipped checkbox
+        $('#wasSkipped').on('change', function() {
+            if ($(this).is(':checked')) {
+                $('#skipReasonDiv').slideDown();
+                $('#SkipReason').attr('required', true);
+            } else {
+                $('#skipReasonDiv').slideUp();
+                $('#SkipReason').attr('required', false);
+                $('#SkipReason').val('');
+            }
+        });
+        
+        @* EKSEMPLER PÅ EKSTRA FUNKTIONALITET:
+         * 
+         * 1. Barcode scanning:
+         *    function scanBarcode() {
+         *        // Scan medicin barcode for at verificere korrekt medicin
+         *        // Scan beboer barcode for at verificere korrekt beboer
+         *    }
+         * 
+         * 2. Photo documentation:
+         *    function takePhoto() {
+         *        // Tag billede af medicinen eller beboeren der tager medicinen
+         *        // Upload til dokumentation
+         *    }
+         * 
+         * 3. Digital signatur:
+         *    function captureSignature() {
+         *        // Fang digital signatur fra personale
+         *    }
+         * 
+         * 4. GPS lokation (for hjemmebesøg):
+         *    if (navigator.geolocation) {
+         *        navigator.geolocation.getCurrentPosition(function(position) {
+         *            $('#latitude').val(position.coords.latitude);
+         *            $('#longitude').val(position.coords.longitude);
+         *        });
+         *    }
+         *@
+    </script>
+}

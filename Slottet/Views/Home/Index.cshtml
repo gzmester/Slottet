@@ -1,0 +1,107 @@
+@{
+    ViewData["Title"] = "Forside";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Velkommen til Slottet</h1>
+    <p class="lead">Her kan du få både CPR-numre og Snaps</p>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">👥 Beboere</h5>
+                <p class="card-text">Administrer beboere, deres information og historik</p>
+                <a asp-controller="Residents" asp-action="Index" class="btn btn-primary">Se beboere</a>
+                <a asp-controller="Residents" asp-action="Create" class="btn btn-outline-success">Tilføj ny</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">💊 Medicin</h5>
+                <p class="card-text">Håndter medicin, doseringer og log udleveringer</p>
+                <a asp-controller="Medications" asp-action="Index" class="btn btn-primary">Se medicin</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">📊 Rapporter</h5>
+                <p class="card-text">Generer rapporter og se historik</p>
+                <a href="#" class="btn btn-primary disabled">Kommer snart</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-12">
+        <h3>System Information</h3>
+        <table class="table table-sm">
+            <tr>
+                <th>API Endpoints:</th>
+                <td>
+                    <code>/api/residents</code>, 
+                    <code>/api/medications</code>
+                </td>
+            </tr>
+            <tr>
+                <th>Swagger API Docs:</th>
+                <td><a href="/swagger" target="_blank">/swagger</a> (kun i development)</td>
+            </tr>
+            <tr>
+                <th>Database:</th>
+                <td>Entity Framework Core med SQL Server</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+@*
+EKSEMPLER PÅ HVAD MAN KUNNE TILFØJE TIL FORSIDEN:
+
+1. Dashboard med statistik:
+   <div class="row">
+       <div class="col-md-3">
+           <div class="card bg-primary text-white">
+               <div class="card-body">
+                   <h5>@Model.TotalResidents</h5>
+                   <p>Total Beboere</p>
+               </div>
+           </div>
+       </div>
+   </div>
+
+2. Seneste aktivitet feed:
+   <div class="mt-4">
+       <h4>Seneste Aktivitet</h4>
+       <ul class="list-group">
+           @foreach(var activity in Model.RecentActivities)
+           {
+               <li class="list-group-item">
+                   @activity.Description - @activity.Timestamp
+               </li>
+           }
+       </ul>
+   </div>
+
+3. Quick actions:
+   <div class="quick-actions">
+       <button onclick="showNewResidentModal()">Hurtig Oprettelse</button>
+       <button onclick="logMedication()">Log Medicin</button>
+   </div>
+
+4. Notifikationer/Alerts:
+   @if(Model.HasPendingMedications)
+   {
+       <div class="alert alert-warning">
+           Der er @Model.PendingMedicationCount medicin der skal gives!
+       </div>
+   }
+*@
