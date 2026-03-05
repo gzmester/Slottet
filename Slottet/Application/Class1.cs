@@ -1,4 +1,4 @@
-﻿namespace Core;
+﻿namespace Application;
 
 public class Class1
 {
