@@ -6,9 +6,15 @@
     </div>
 
     <main>
-        <div class="header">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+        <header class="header">
+            <input type="date" class="form-control header-date-input"/>
+            <div class="header-right">
+                <input class="form-control header-pincode-input" type="password" placeholder="pinkode" maxlength="6"/>
+                <button class="btn btn-danger header-logout-button">
+                    Log ud
+                </button>
+            </div>
+        </header>
 
         <article class="content px-4">
             @Body

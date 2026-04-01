@@ -1,17 +1,17 @@
 .page {
     display: grid;
-    grid-template-columns: 230px 1fr;  /* Sidebar + Col2 + Col3 */
+    grid-template-columns: 200px 1fr;  /* Sidebar + Col2 + Col3 */
     grid-template-rows: auto 1fr auto      /* Col2/Col3 top + middle, footer (constant size) */
 }
 
-.header {
-    background-color: white;
-    border-bottom: 0.1vh solid #d6d5d5;
-    justify-content: flex-end;
-    height: 8vh;
-    display: flex;
-    align-items: center;
+
+
+main {
+    grid-column: 2 / 4;  /* Spans Col2 + Col3 */
+    grid-row: 1 / 3;     /* Spans rows 1-2 */
 }
+
+
 
 .sidebar {
     background-color: black;
@@ -24,16 +24,43 @@
 }
 
 
-main {
-    grid-column: 2 / 4;  /* Spans Col2 + Col3 */
-    grid-row: 1 / 3;     /* Spans rows 1-2 */
+
+header {
+    background-color: white;
+    border-bottom: 0.1vh solid #d6d5d5;
+    height: 8vh;
+
+    display: flex;
+    justify-content: space-between;    
+    align-items: center;
+    padding: 0px 25px 0px 25px;
+}
+.header-right {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    width: auto;
+    height: auto;
+}
+.header-date-input {
+    height: auto;
+    width: auto;
+}
+.header-pincode-input {
+    height: auto;
+    width: 6rem;
+}
+.header-logout-button {
+    height: auto;
+    width: auto;
 }
 
 
-.footer {
+
+footer {
     grid-column: 1 / 4;  /* Spans Col2 + Col3 only */
     grid-row: 3;
-    height: 7vh;       /* Adjust constant height as needed */
+    height: 6vh;       /* Adjust constant height as needed */
     background-color: rgba(255, 222, 7, 0.765);
     border-top: 0.1vh solid #d6d5d5;
 }
@@ -44,9 +71,16 @@ main {
     padding: 0px 100px 0px 280px;
 }
 .footer-text-box {
-    /* font-size: clamp(1rem, 1vw + 1rem, 2.5rem); */
-    padding: 16px 8px 8px 8px;
-    max-width: 500px; /* Stops them from getting too huge on wide screens */
+    font-size: 1.8vw - 0.5rem;
+    padding:0.5vw 8px 8px 8px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis
+}
+@media (max-width: 1600px) {
+    .footer {
+        visibility: hidden;
+    }
 }
 
 
