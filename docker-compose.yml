@@ -12,8 +12,6 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
     env_file:
       - .env
-    depends_on:
-      - db
     networks:
       - slottet-network
 
@@ -33,22 +31,6 @@ services:
     networks:
       - slottet-network
 
-  # Database Service (MySQL)
-  db:
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-    ports:
-      - "3306:3306"
-    volumes:
-      - db-data:/var/lib/mysql
-    networks:
-      - slottet-network
-
 networks:
   slottet-network:
     driver: bridge
-
-volumes:
-  db-data:
