@@ -6,14 +6,27 @@
     </div>
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+        <header class="header">
+            <input type="date" class="form-control header-date-input"/>
+            <div class="header-right">
+                <input class="form-control header-pincode-input" type="password" placeholder="pinkode" maxlength="6"/>
+                <button class="btn btn-danger header-logout-button">
+                    Log ud
+                </button>
+            </div>
+        </header>
 
         <article class="content px-4">
             @Body
         </article>
     </main>
+
+    <footer class="footer-container-flex footer">
+        <h2  class="footer-text-box"> HUSK Risiko vurdering</h2>
+        <h2  class="footer-text-box"> HUSK Medicin</h2>
+        <h2  class="footer-text-box"> HUSK Sundhedsplanner</h2>
+        <h2  class="footer-text-box"> HUSK Delmål</h2>
+    </footer>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
