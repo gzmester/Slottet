@@ -1,7 +1,64 @@
 ﻿@page "/PhoneNumbers"
+@using Domain.Entities
 
-<h3>PhoneNumbers</h3>
+<h1>
+    <img src="images/icons/phone.svg" style="width: 32px; height: 32px;" class="me-2" />
+    Arbejdstelefoner
+</h1>
+
+<!-- Liste over telefonnumre og tildeling -->
+<!-- foreach loop som itererer over phoneNumbers listen med bootstrap som sørger for at navn og telefonnummer vises ved siden af hinanden -->
+@foreach(var phoneNumber in phoneNumbers)
+{
+    <div class="d-flex align-items-center gap-3 mb-2">
+        <span class="number" style="width: 48px">@phoneNumber.Number</span>
+        <input type="text" class="flex-grow-1 rounded-pill bg-secondary bg-opacity-10 px-3 py-2" @bind="@phoneNumber.AssignedTo" placeholder="Angiv navn"/>
+        @* todo: Wrap slet knap i AuthorizeView Roles="Admin" så det kun er admin der kan slette telefon nummer *@
+        <button class="btn btn-danger rounded-pill px-3" @onclick="() => DeletePhoneNumberAsync(phoneNumber)">Slet</button>
+        @* todo: Wrap rediger knap i AuthorizeView Roles="Admin" så det kun er admin der kan redigere telefon nummer *@
+        <button class="btn btn-secondary rounded-pill px-3" @onclick="() => EditPhoneNumberAsync(phoneNumber)">Rediger</button>
+        @* knap til at gemme tildeling af telefonnum,meret, så det hele tiden vises i listen indtil det ændres ved vagtskifte*@
+        <button class="btn btn-primary rounded-pill px-3" @onclick="() => SaveAssignmentAsync(phoneNumber)">Gem</button>
+    </div>
+}
+@* todo: Wrap tilføj knap i AuthorizeView Roles="Admin" så det kun er admin der kan tilføje telefon nummer *@
+<button class="btn btn-primary rounded-pill px-3 mt-3" @onclick="() => AddPhoneNumberAsync()">+ Tilføj Telefonnummer</button>
+
 
 @code {
 
+    //Mock data - skal senere hentes fra database
+    private List<PhoneNumber> phoneNumbers = new List<PhoneNumber>
+    {
+        new PhoneNumber { Id = 1, Number = "41552", AssignedTo = "Maria" },
+        new PhoneNumber { Id = 2, Number = "41553", AssignedTo = "Søren" },
+        new PhoneNumber { Id = 3, Number = "41554", AssignedTo = null },
+        new PhoneNumber { Id = 4, Number = "41555", AssignedTo = null },
+        new PhoneNumber { Id = 5, Number = "41556", AssignedTo = null },
+        new PhoneNumber { Id = 6, Number = "41557", AssignedTo = null }
+    };
+
+    //metode som udfydles senere
+    private async Task SaveAssignmentAsync(PhoneNumber phoneNumber)
+    {
+        
+    }
+
+    //metode som udfydles senere
+    private async Task AddPhoneNumberAsync()
+    {
+        
+    }
+
+    //metode som udfydles senere
+    private async Task EditPhoneNumberAsync(PhoneNumber phoneNumber)
+    {
+        
+    }
+
+    //metode som udfydles senere
+    private async Task DeletePhoneNumberAsync(PhoneNumber phoneNumber)
+    {
+        
+    }
 }
