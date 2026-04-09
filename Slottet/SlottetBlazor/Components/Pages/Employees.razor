@@ -1,7 +1,63 @@
 ﻿@page "/Employees"
+@using Domain.Entities
 
-<h3>Employee</h3>
+@*Overskrift med ikon*@
+<h1>
+    <img src="images/icons/Employee.svg" style="width: 32px; height: 32px;"  />
+    Ansatte
+</h1>
+
+@*Tabel som viser ansatte med navn, tlf, pinkode og rettigheder, samt en slet knap*@
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Navn</th>
+            <th>Telefonnummer</th>
+            <th>Pinkode</th>
+            <th>Rettigheder</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @*Itererer gennem listen af ansatte og bruger informationerne til at vise dem i tabellen*@
+        @foreach(var employee in employees)
+        {
+            <tr>
+                <td>@employee.FirstName @employee.LastName</td>
+                <td>@employee.PhoneNumber</td>
+                <td>@employee.PinCode</td>
+                <td>@string.Join(", ", employee.Roles.Select(r => $"{r.Name} ({r.ResponsibilityArea})"))</td>
+                <td><button class="btn btn-danger" @onclick="() => DeleteEmployeeAsync(employee)">Slet</button></td>
+            </tr>
+        }
+    </tbody>
+</table>
+@*Tilføj medarbejder knap*@
+<button class="btn btn-primary" @onclick="() => AddEmployeeAsync()">+ Tilføj Ansat</button>
+
 
 @code {
+    //Mock data - skal senere hentes fra database
+    private List<Employee> employees = new List<Employee>
+    {
+        new Employee {FirstName = "Maria", LastName = "Jensen", PhoneNumber = 41552234, PinCode = 123435, Roles = new List<Role> { new Role { RoleID = 1, Name="Admin", ResponsibilityArea="Alle funktioner" } } },
+        new Employee {FirstName = "Søren", LastName = "Hansen", PhoneNumber = 41553211, PinCode = 567832, Roles = new List<Role> { new Role { RoleID = 2, Name="Bruger", ResponsibilityArea="Begrænset funktionalitet" } } },
+        new Employee {FirstName = "Lars", LastName = "Nielsen", PhoneNumber = 85746392, PinCode = 987654, Roles = new List<Role> { new Role { RoleID = 2, Name="Bruger", ResponsibilityArea="Begrænset funktionalitet" } } },
+        new Employee {FirstName = "Anna", LastName = "Pedersen", PhoneNumber = 92837465, PinCode = 432109, Roles = new List<Role> { new Role { RoleID = 2, Name="Bruger", ResponsibilityArea="Begrænset funktionalitet" } } },
+        new Employee {FirstName = "Peter", LastName = "Andersen", PhoneNumber = 55555555, PinCode = 111111, Roles = new List<Role> { new Role { RoleID = 2, Name="Bruger", ResponsibilityArea="Begrænset funktionalitet" } } },
+        new Employee {FirstName = "Mette", LastName = "Larsen", PhoneNumber = 66666666, PinCode = 222222, Roles = new List<Role> { new Role { RoleID = 2, Name="Bruger", ResponsibilityArea="Begrænset funktionalitet" } } }
+    };
+
+    //metode som udfydles senere
+    private async Task AddEmployeeAsync()
+    {
+        
+    }
+
+    //metode som udfydles senere
+    private async Task DeleteEmployeeAsync(Employee employee)
+    {
+        
+    }
 
 }
