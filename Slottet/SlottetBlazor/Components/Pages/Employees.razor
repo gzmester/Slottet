@@ -1,4 +1,5 @@
 ﻿@page "/Employees"
+@rendermode InteractiveServer
 @using Domain.Entities
 
 @*Overskrift med ikon*@
@@ -33,10 +34,88 @@
     </tbody>
 </table>
 @*Tilføj medarbejder knap*@
-<button class="btn btn-primary" @onclick="() => AddEmployeeAsync()">+ Tilføj Ansat</button>
+<button class="btn btn-primary" @onclick="AddEmployeeAsync">+ Tilføj Ansat</button>
+
+@* Modal til at tilføje en ny ansat *@
+@*showModal bliver true når bruger trykker på "tilføj ansat" knappen, og derefter vises modalen*@
+@*Modalen er bygget op efter bootsraps dokumentations eksempel*@
+@if(showModal)
+{
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tilføj Ansat</h5>
+                    <button type="button" class="btn-close" @onclick="() => CloseModal()" aria-label="Close"></button>
+                </div>
+                @* Formular til at tilføje en ny ansat 
+                Hvor hvert felt har en inputfelt
+                mb-3 er afstnanden mellem hvert felt
+                form-label giver skriftstørrelse til label
+                form-control giver inputfeltet en bestemt størrelse og stil*@
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Fornavn</label>
+                        <input type="text" class="form-control" @bind="newFirstName" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Efternavn</label>
+                        <input type="text" class="form-control" @bind="newLastName" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">E-mail</label>
+                        <input type="email" class="form-control" @bind="newEmail" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Telefonnummer</label>
+                        <input type="tel" class="form-control" @bind="newPhoneNumber" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Pinkode</label>
+                        <input type="password" class="form-control" @bind="newPinCode" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Lokation</label>
+                        <select class="form-select" @bind="newLocationID">
+                            <option value="">Vælg lokation</option>
+                            <option value="1">Slottet</option>
+                            <option value="2">Åhaven</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Autorisation </label>
+                        <select class="form-select" @bind="newAuthorizationID">
+                            <option value="">Vælg autorisation </option>
+                            <option value="1">Admin</option>
+                            <option value="2">Bruger</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => CloseModal()">Close</button>
+                    <button type="button" class="btn btn-primary">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @*Gør baggrunden mørkere mens modalen er åben, så man kan skelne mellem baggrunden og modalen*@
+    <div class="modal-backdrop fade show"></div>
+}
 
 
 @code {
+    //variabel til at styre visningen af modalen, så den kun vises når showModal er true
+    private bool showModal = false;
+
+    //variabler til at binde inputfelterne i modalen, så vi kan bruge værdierne senere når vi skal tilføje en ny ansat
+    private string newFirstName = string.Empty;
+    private string newLastName = string.Empty;
+    private string newEmail = string.Empty;
+    private string newPhoneNumber = string.Empty;
+    private string newPinCode = string.Empty;
+    private int newLocationID;
+    private int newAuthorizationID;
+    
     //Mock data - skal senere hentes fra database
     private List<Employee> employees = new List<Employee>
     {
@@ -51,13 +130,20 @@
     //metode som udfydles senere
     private async Task AddEmployeeAsync()
     {
-        
+        //Når brugeren klikker på "Tilføj Ansat" knappen, sættes showModal til true, hvilket får modalen til at blive vist
+        showModal = true;
     }
 
     //metode som udfydles senere
     private async Task DeleteEmployeeAsync(Employee employee)
     {
         
+    }
+
+    //Metode til at lukke modalen, ved at sætte showModal til false, så modalen ikke længere vises
+    private void CloseModal()
+    {
+        showModal = false;
     }
 
 }
