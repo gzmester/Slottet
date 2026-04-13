@@ -1,7 +1,105 @@
 ﻿@page "/Locations"
+@using SlottetPageTest.Domain
 
-<h3>Location</h3>
+<div style="width:350px">
+
+    <!-- Lokation dropdown -->
+    <div class="d-flex align-items-center mb-3">
+
+        <select class="form-select form-select-sm w-auto"
+                @bind="selectedLocationId">
+
+            <option value="">Lokation</option>
+
+            @foreach (var location in Locations)
+            {
+                <option value="@location.LocationID">
+                    @location.Name
+                </option>
+            }
+
+        </select>
+
+        <button class="btn btn-sm ms-2"
+                @onclick="AddLocationAsync">
+            ➕
+        </button>
+
+    </div>
+
+
+    <!-- tabel -->
+    <table class="table table-bordered table-sm">
+
+        <thead class="table-light">
+
+            <tr>
+                <th>Navn</th>
+                <th>Værelses Nr.</th>
+            </tr>
+
+        </thead>
+
+
+        <tbody>
+
+            @if (SelectedLocation != null)
+            {
+                @foreach (var resident in SelectedLocation.Residents)
+                {
+                    <tr>
+                        <td>
+                            <input class="form-control form-control-sm"
+                                   placeholder="Navn"
+                                   @bind="resident.FirstName" />
+
+                            <input class="form-control form-control-sm mt-1"
+                                   placeholder="Efternavn"
+                                   @bind="resident.LastName" />
+
+                        </td>
+
+
+                        <td>
+
+                            <input class="form-control form-control-sm"
+                                   @bind="resident.Room" />
+
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+
 
 @code {
+
+    /* data */
+    private List<Location> Locations = new();
+
+    private int? selectedLocationId;
+
+
+
+    /* selected */
+    private Location? SelectedLocation =>
+        Locations.FirstOrDefault(l => l.LocationID == selectedLocationId);
+
+
+
+    /* metoder */
+    private async Task AddLocationAsync()
+    {
+
+    }
+
+
+    private async Task AddResidentAsync()
+    {
+
+    }
 
 }
