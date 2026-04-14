@@ -1,7 +1,90 @@
 ﻿@page "/Tasks"
 
-<h3>Tasks</h3>
+<h1 class="mb-4">
+    <i class="bi bi-list-task me-2" style="font-size: 32px;"></i>
+    Opgaver
+</h1>
+
+<div class="row">
+
+    <!-- Venstre tabel -->
+    <div class="col-md-6">
+        <table class="table table-bordered">
+            <thead>
+                <tr class="table-warning text-center">
+                    <th>Særligt ansvarlige</th>
+                    <th>Navn</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var task in specialTasks)
+                {
+                    <tr>
+                        <td>@task.Title</td>
+                        <td>
+                            <input type="text"
+                                   class="form-control"
+                                   @bind="task.Name" />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Højre tabel -->
+    <div class="col-md-6">
+        <table class="table table-bordered">
+            <thead>
+                <tr class="table-warning text-center">
+                    <th>Afdelingsopgaver</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var task in departmentTasks)
+                {
+                    <tr>
+                        <td>
+                            <input type="text"
+                                   class="form-control"
+                                   @bind="task.Name" />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+</div>
 
 @code {
 
+    // Venstre tabel (Særlige opgaver)
+    private List<TaskItem> specialTasks = new()
+    {
+        new TaskItem { Title = "Medicinan­svarlig:" },
+        new TaskItem { Title = "Omsorgsperson:" },
+        new TaskItem { Title = "Frokost:" },
+        new TaskItem { Title = "Aftensmad:" },
+        new TaskItem { Title = "Hygiejne/afsprit:" },
+        new TaskItem { Title = "Ventil-tid:" },
+        new TaskItem { Title = "Rengøring af depot mandag før kl.14:00:" },
+        new TaskItem { Title = "Oprydning på kontor tirsdag før kl.14:00:" }
+    };
+
+    // Højre tabel (Afdelingsopgaver)
+    private List<TaskItem> departmentTasks = new()
+    {
+        new TaskItem(),
+        new TaskItem(),
+        new TaskItem(),
+        new TaskItem(),
+        new TaskItem()
+    };
+
+    public class TaskItem
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+    }
 }
