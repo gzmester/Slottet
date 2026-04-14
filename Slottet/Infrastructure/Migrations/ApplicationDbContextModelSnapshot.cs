@@ -169,36 +169,6 @@ namespace Infrastructure.Migrations
                     b.ToTable("PNMedicin", (string)null);
                 });
 
-            modelBuilder.Entity("Domain.Entities.Product", b =>
-                {
-                    b.Property<int>("ProductID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ProductID"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(65,30)");
-
-                    b.Property<int>("Stock")
-                        .HasColumnType("int");
-
-                    b.HasKey("ProductID");
-
-                    b.ToTable("Products");
-                });
-
             modelBuilder.Entity("Domain.Entities.Resident", b =>
                 {
                     b.Property<int>("ResidentID")

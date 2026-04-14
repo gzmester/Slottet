@@ -1,6 +1,9 @@
-﻿@page "/Employees"
+@page "/Employees"
 @rendermode InteractiveServer
-@using Domain.Entities
+@using Application.DTOs.Employee
+@using Application.DTOs.Location
+@using Application.DTOs.Authorization
+@inject IHttpClientFactory HttpClientFactory
 
 @*Overskrift med ikon*@
 <h1>
@@ -27,7 +30,7 @@
                 <td>@employee.FirstName @employee.LastName</td>
                 <td>@employee.PhoneNumber</td>
                 <td>@employee.PinCode</td>
-                <td>@string.Join(", ", employee.Roles.Select(r => $"{r.Name} ({r.ResponsibilityArea})"))</td>
+                <td>@string.Join(", ", employee.Roles)</td>
                 <td><button class="btn btn-danger" @onclick="() => DeleteEmployeeAsync(employee)">Slet</button></td>
             </tr>
         }
@@ -77,23 +80,40 @@
                     <div class="mb-3">
                         <label class="form-label">Lokation</label>
                         <select class="form-select" @bind="newLocationID">
-                            <option value="">Vælg lokation</option>
-                            <option value="1">Slottet</option>
-                            <option value="2">Åhaven</option>
+                            <option value="0">Vælg lokation</option>
+                            @foreach (var loc in locations)
+                            {
+                                <option value="@loc.LocationID">@loc.Name</option>
+                            }
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Autorisation </label>
+                        <label class="form-label">Autorisation</label>
                         <select class="form-select" @bind="newAuthorizationID">
-                            <option value="">Vælg autorisation </option>
-                            <option value="1">Admin</option>
-                            <option value="2">Bruger</option>
+                            <option value="0">Vælg autorisation</option>
+                            @foreach (var auth in authorizations)
+                            {
+                                <option value="@auth.AuthorizationID">@(auth.Admin ? "Admin" : auth.Scheduler ? "Planlægger" : auth.Employee ? "Medarbejder" : "Vikar")</option>
+                            }
                         </select>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Vagttype</label>
+                        <select class="form-select" @bind="newShiftType">
+                            <option value="">Vælg vagttype</option>
+                            <option value="Day">Dag</option>
+                            <option value="Midday">Middag</option>
+                            <option value="Night">Nat</option>
+                        </select>
+                    </div>
+                    @if (saveError is not null)
+                    {
+                        <div class="alert alert-danger">@saveError</div>
+                    }
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="() => CloseModal()">Close</button>
-                    <button type="button" class="btn btn-primary">Save changes</button>
+                    <button type="button" class="btn btn-secondary" @onclick="() => CloseModal()">Luk</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveEmployeeAsync">Gem</button>
                 </div>
             </div>
         </div>
@@ -104,10 +124,8 @@
 
 
 @code {
-    //variabel til at styre visningen af modalen, så den kun vises når showModal er true
     private bool showModal = false;
 
-    //variabler til at binde inputfelterne i modalen, så vi kan bruge værdierne senere når vi skal tilføje en ny ansat
     private string newFirstName = string.Empty;
     private string newLastName = string.Empty;
     private string newEmail = string.Empty;
@@ -115,35 +133,100 @@
     private string newPinCode = string.Empty;
     private int newLocationID;
     private int newAuthorizationID;
-    
-    //Mock data - skal senere hentes fra database
-    private List<Employee> employees = new List<Employee>
-    {
-        new Employee {FirstName = "Maria", LastName = "Jensen", PhoneNumber = 41552234, PinCode = 123435, Roles = new List<Role> { new Role { RoleID = 1, Name="Admin", ResponsibilityArea="Alle funktioner" } } },
-        new Employee {FirstName = "Søren", LastName = "Hansen", PhoneNumber = 41553211, PinCode = 567832, Roles = new List<Role> { new Role { RoleID = 2, Name="Bruger", ResponsibilityArea="Begrænset funktionalitet" } } },
-        new Employee {FirstName = "Lars", LastName = "Nielsen", PhoneNumber = 85746392, PinCode = 987654, Roles = new List<Role> { new Role { RoleID = 2, Name="Bruger", ResponsibilityArea="Begrænset funktionalitet" } } },
-        new Employee {FirstName = "Anna", LastName = "Pedersen", PhoneNumber = 92837465, PinCode = 432109, Roles = new List<Role> { new Role { RoleID = 2, Name="Bruger", ResponsibilityArea="Begrænset funktionalitet" } } },
-        new Employee {FirstName = "Peter", LastName = "Andersen", PhoneNumber = 55555555, PinCode = 111111, Roles = new List<Role> { new Role { RoleID = 2, Name="Bruger", ResponsibilityArea="Begrænset funktionalitet" } } },
-        new Employee {FirstName = "Mette", LastName = "Larsen", PhoneNumber = 66666666, PinCode = 222222, Roles = new List<Role> { new Role { RoleID = 2, Name="Bruger", ResponsibilityArea="Begrænset funktionalitet" } } }
-    };
+    private string newShiftType = string.Empty;
+    private string? saveError;
 
-    //metode som udfydles senere
-    private async Task AddEmployeeAsync()
+    private List<EmployeeResponseDto> employees = new();
+    private List<LocationResponseDto> locations = new();
+    private List<AuthorizationResponseDto> authorizations = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        //Når brugeren klikker på "Tilføj Ansat" knappen, sættes showModal til true, hvilket får modalen til at blive vist
+        var http = HttpClientFactory.CreateClient("API");
+
+        var empTask  = http.GetFromJsonAsync<List<EmployeeResponseDto>>("api/employees");
+        var locTask  = http.GetFromJsonAsync<List<LocationResponseDto>>("api/locations");
+        var authTask = http.GetFromJsonAsync<List<AuthorizationResponseDto>>("api/authorizations");
+
+        await Task.WhenAll(empTask, locTask, authTask);
+
+        if (empTask.Result  is not null) employees      = empTask.Result;
+        if (locTask.Result  is not null) locations      = locTask.Result;
+        if (authTask.Result is not null) authorizations = authTask.Result;
+    }
+
+    private void AddEmployeeAsync()
+    {
+        newFirstName = string.Empty;
+        newLastName = string.Empty;
+        newEmail = string.Empty;
+        newPhoneNumber = string.Empty;
+        newPinCode = string.Empty;
+        newLocationID = 0;
+        newAuthorizationID = 0;
+        newShiftType = string.Empty;
+        saveError = null;
         showModal = true;
     }
 
-    //metode som udfydles senere
-    private async Task DeleteEmployeeAsync(Employee employee)
+    private async Task SaveEmployeeAsync()
     {
-        
+        saveError = null;
+
+        if (!int.TryParse(newPhoneNumber, out var phone))
+        {
+            saveError = "Telefonnummer skal være et tal.";
+            return;
+        }
+        if (!int.TryParse(newPinCode, out var pin))
+        {
+            saveError = "Pinkode skal være et tal.";
+            return;
+        }
+        if (newLocationID == 0 || newAuthorizationID == 0 || string.IsNullOrEmpty(newShiftType))
+        {
+            saveError = "Udfyld venligst alle felter.";
+            return;
+        }
+
+        var dto = new EmployeeCreateDto
+        {
+            FirstName       = newFirstName,
+            LastName        = newLastName,
+            Email           = newEmail,
+            PhoneNumber     = phone,
+            PinCode         = pin,
+            LocationID      = newLocationID,
+            AuthorizationID = newAuthorizationID,
+            ShiftType       = newShiftType
+        };
+
+        var http = HttpClientFactory.CreateClient("API");
+        var response = await http.PostAsJsonAsync("api/employees", dto);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var created = await response.Content.ReadFromJsonAsync<EmployeeResponseDto>();
+            if (created is not null)
+                employees.Add(created);
+            CloseModal();
+        }
+        else
+        {
+            saveError = $"Fejl ved oprettelse: {response.StatusCode}";
+        }
     }
 
-    //Metode til at lukke modalen, ved at sætte showModal til false, så modalen ikke længere vises
+    private async Task DeleteEmployeeAsync(EmployeeResponseDto employee)
+    {
+        var http = HttpClientFactory.CreateClient("API");
+        var response = await http.DeleteAsync($"api/employees/{employee.EmployeeID}");
+        if (response.IsSuccessStatusCode)
+            employees.Remove(employee);
+    }
+
     private void CloseModal()
     {
         showModal = false;
     }
-
 }

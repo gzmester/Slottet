@@ -18,9 +18,6 @@ public class ApplicationDbContext : DbContext
     public DbSet<PNMedicin> PNMedicins { get; set; }
     public DbSet<Status> Statuses { get; set; }
 
-    // Eksempel-tabel for at vise - den er ikke oprettet i Domain/Entities, så den skal ikke bruges i API'et
-    public DbSet<Product> Products { get; set; }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -124,11 +121,5 @@ public class ApplicationDbContext : DbContext
                   .HasForeignKey(e => e.ResidentID);
         });
 
-        // Eksempel-entity
-        modelBuilder.Entity<Product>(entity =>
-        {
-            entity.ToTable("Product");
-            entity.HasKey(e => e.ProductID);
-        });
     }
 }

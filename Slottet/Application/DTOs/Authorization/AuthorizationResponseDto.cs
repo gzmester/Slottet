@@ -1,13 +1,10 @@
-namespace Domain.Entities;
+namespace Application.DTOs.Authorization;
 
-public class Authorization
+public class AuthorizationResponseDto
 {
     public int AuthorizationID { get; set; }
     public bool Substitute { get; set; }
     public bool Employee { get; set; }
     public bool Scheduler { get; set; }
     public bool Admin { get; set; }
-
-    // Navigation
-    public ICollection<Employee> Employees { get; set; } = new List<Employee>();
 }

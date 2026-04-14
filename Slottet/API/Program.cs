@@ -21,6 +21,16 @@ var connectionString = dbHost is not null
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 36))));
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("BlazorClient", policy =>
+    {
+        policy.WithOrigins("http://localhost:5140", "https://localhost:7158", "http://localhost:5000")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 
 // Run migrations and optionally seed data on startup
@@ -29,13 +39,20 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-    logger.LogInformation("Applying database migrations...");
-    await db.Database.MigrateAsync();
-
-    // Seed only in Development
-    if (app.Environment.IsDevelopment())
+    try
     {
-        await DataSeeder.SeedAsync(db, logger);
+        logger.LogInformation("Applying database migrations...");
+        await db.Database.MigrateAsync();
+
+        // Seed only in Development
+        if (app.Environment.IsDevelopment())
+        {
+            await DataSeeder.SeedAsync(db, logger);
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Database migration/seed fejlede. API starter alligevel.");
     }
 }
 
@@ -46,6 +63,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("BlazorClient");
 
 app.MapControllers();  // aktiver alle [ApiController] klasser
 
