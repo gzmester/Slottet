@@ -1,5 +1,4 @@
 ﻿@page "/Locations"
-@using SlottetPageTest.Domain
 
 <div style="width:350px">
 
@@ -11,7 +10,7 @@
 
             <option value="">Lokation</option>
 
-            @foreach (var location in Locations)
+            @foreach (var location in LocationsList)
             {
                 <option value="@location.LocationID">
                     @location.Name
@@ -78,7 +77,7 @@
 @code {
 
     /* data */
-    private List<Location> Locations = new();
+    private List<Location> LocationsList = new();
 
     private int? selectedLocationId;
 
@@ -86,7 +85,7 @@
 
     /* selected */
     private Location? SelectedLocation =>
-        Locations.FirstOrDefault(l => l.LocationID == selectedLocationId);
+        LocationsList.FirstOrDefault(l => l.LocationID == selectedLocationId);
 
 
 
