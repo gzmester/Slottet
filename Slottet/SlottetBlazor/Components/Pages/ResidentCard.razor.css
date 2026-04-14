@@ -1,0 +1,101 @@
+.resident-card-container {
+    background-color: rgb(248, 248, 248); 
+    border-radius: 15px; 
+    padding: 0px; 
+    box-shadow: 0 2px 4px rgba(20, 20, 20, 0.5);
+}
+
+
+/* header table */
+.resident-header-table {
+    width: 100%;
+    margin-bottom: -4px;
+    
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 3px solid #ffffff;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.resident-header-table th{
+    padding: 5px 5px 5px 12px;
+    text-align: left;
+    background-color: #ffffff;
+    font-weight: bold;
+}
+
+.resident-header-table td {
+    padding: 6px;
+    text-align: left;
+}
+
+
+/* middle table */
+.resident-middle-table {
+    width: 100%;
+    margin-bottom: -2px;
+
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 3px solid #ffffff;
+    border-radius: 15px;
+    overflow: hidden;
+}
+.resident-middle-table td {
+    padding: 6px 6px 0px 6px;
+    text-align: left;
+}
+
+
+/* bottom table */
+.resident-bottom-table {
+    width: 100%;
+    margin-bottom: 0px;
+
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 3px solid rgb(255, 255, 255);
+    border-radius: 15px;
+    overflow: hidden;
+}
+.resident-bottom-table td {
+    padding: 2px 6px 0px 5px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+
+
+
+/* inputs */
+.table-input {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+
+.dropdown-risk-input {
+    width: 100%;
+    padding: 8px;
+    margin: 0 0 0 0px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+.dropdown-mood-input {
+    width: 100%;
+    padding: 8px;
+    margin: 0 0 0 0px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+
+.dropdown-input {
+    cursor: pointer;
+}
