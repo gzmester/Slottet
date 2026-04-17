@@ -17,6 +17,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Medicin> Medicins { get; set; }
     public DbSet<PNMedicin> PNMedicins { get; set; }
     public DbSet<Status> Statuses { get; set; }
+    public DbSet<PhoneNumber> PhoneNumbers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -119,6 +120,14 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.Resident)
                   .WithMany(r => r.Statuses)
                   .HasForeignKey(e => e.ResidentID);
+        });
+
+        modelBuilder.Entity<PhoneNumber>(entity =>
+        {
+            entity.ToTable("PhoneNumber");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Number).HasMaxLength(8).IsRequired();
+            entity.Property(e => e.AssignedTo).HasMaxLength(50);
         });
 
     }

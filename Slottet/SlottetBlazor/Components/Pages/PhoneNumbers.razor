@@ -1,5 +1,8 @@
 ﻿@page "/PhoneNumbers"
-@using Domain.Entities
+@rendermode InteractiveServer
+@using Application.DTOs.PhoneNumber
+
+@inject IHttpClientFactory HttpClientFactory
 
 <h1>
     <img src="images/icons/phone.svg" style="width: 32px; height: 32px;" class="me-2" />
@@ -14,7 +17,7 @@
         <span class="number" style="width: 48px">@phoneNumber.Number</span>
         <input type="text" class="flex-grow-1 rounded-pill bg-secondary bg-opacity-10 px-3 py-2" @bind="@phoneNumber.AssignedTo" placeholder="Angiv navn"/>
         @* todo: Wrap slet knap i AuthorizeView Roles="Admin" så det kun er admin der kan slette telefon nummer *@
-        <button class="btn btn-danger rounded-pill px-3" @onclick="() => DeletePhoneNumberAsync(phoneNumber)">Slet</button>
+        <button class="btn btn-danger rounded-pill px-3" @onclick="() => DeletePhoneNumberAsync(phoneNumber )">Slet</button>
         @* todo: Wrap rediger knap i AuthorizeView Roles="Admin" så det kun er admin der kan redigere telefon nummer *@
         <button class="btn btn-secondary rounded-pill px-3" @onclick="() => EditPhoneNumberAsync(phoneNumber)">Rediger</button>
         @* knap til at gemme tildeling af telefonnum,meret, så det hele tiden vises i listen indtil det ændres ved vagtskifte*@
@@ -25,40 +28,110 @@
 <button class="btn btn-primary rounded-pill px-3 mt-3" @onclick="() => AddPhoneNumberAsync()">+ Tilføj Telefonnummer</button>
 
 
+@if(showModal)
+{
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tilføj Ansat</h5>
+                    <button type="button" class="btn-close" @onclick="() => CloseModal()" aria-label="Close"></button>
+                </div>
+                @* Formular til at tilføje en ny ansat 
+                Hvor hvert felt har en inputfelt
+                mb-3 er afstnanden mellem hvert felt
+                form-label giver skriftstørrelse til label
+                form-control giver inputfeltet en bestemt størrelse og stil*@
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nummer</label>
+                        <input type="text" class="form-control" @bind="newNumber"  />
+                    </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => CloseModal()">Luk</button>
+                    <button type="button" class="btn btn-primary" @onclick="ConfirmAddAsync">Gem</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    @*Gør baggrunden mørkere mens modalen er åben, så man kan skelne mellem baggrunden og modalen*@
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (saveError)
+{
+    <div class="alert alert-danger">
+        Noget gik galt — prøv igen.
+    </div>
+}
 @code {
+    private bool saveError = false;
+    private bool showModal = false;
+    private string newNumber = string.Empty;
 
     //Mock data - skal senere hentes fra database
-    private List<PhoneNumber> phoneNumbers = new List<PhoneNumber>
+    private List<PhoneNumberResponseDto> phoneNumbers = new List<PhoneNumberResponseDto>();
+
+    protected override async Task OnInitializedAsync()
     {
-        new PhoneNumber { Id = 1, Number = "41552", AssignedTo = "Maria" },
-        new PhoneNumber { Id = 2, Number = "41553", AssignedTo = "Søren" },
-        new PhoneNumber { Id = 3, Number = "41554", AssignedTo = null },
-        new PhoneNumber { Id = 4, Number = "41555", AssignedTo = null },
-        new PhoneNumber { Id = 5, Number = "41556", AssignedTo = null },
-        new PhoneNumber { Id = 6, Number = "41557", AssignedTo = null }
-    };
+        var http = HttpClientFactory.CreateClient("API");
+
+        var result = await http.GetFromJsonAsync<List<PhoneNumberResponseDto>>("api/phoneNumber");
+        if (result is not null) phoneNumbers = result;
+    }
 
     //metode som udfydles senere
-    private async Task SaveAssignmentAsync(PhoneNumber phoneNumber)
+    private async Task SaveAssignmentAsync(PhoneNumberResponseDto phoneNumber)
     {
+        var http = HttpClientFactory.CreateClient("API");
+        var response = await http.PatchAsJsonAsync($"api/phoneNumber/{phoneNumber.Id}/assignment", phoneNumber.AssignedTo);
         
+        if (!response.IsSuccessStatusCode)
+        {
+            saveError = true;
+        }
     }
 
     //metode som udfydles senere
     private async Task AddPhoneNumberAsync()
     {
-        
+        showModal = true;
+    }
+
+    private async Task ConfirmAddAsync()
+    {
+         var http = HttpClientFactory.CreateClient("API");
+         var dto = new PhoneNumberCreateDto { Number = newNumber};
+         var response = await http.PostAsJsonAsync("api/phoneNumber", dto);
+
+         if (response.IsSuccessStatusCode)
+         {
+            var created = await response.Content.ReadFromJsonAsync<PhoneNumberResponseDto>();
+            if (created is not null) phoneNumbers.Add(created);
+            showModal = false;
+            newNumber = string.Empty;    
+         }
     }
 
     //metode som udfydles senere
-    private async Task EditPhoneNumberAsync(PhoneNumber phoneNumber)
+    private async Task EditPhoneNumberAsync(PhoneNumberResponseDto phoneNumber)
     {
         
     }
 
     //metode som udfydles senere
-    private async Task DeletePhoneNumberAsync(PhoneNumber phoneNumber)
+    private async Task DeletePhoneNumberAsync(PhoneNumberResponseDto phoneNumber)
     {
+        var http = HttpClientFactory.CreateClient("API");
+        var response = await http.DeleteAsync($"api/phonenumber/{phoneNumber.Id}");
         
+        if (response.IsSuccessStatusCode)
+            phoneNumbers.Remove(phoneNumber);
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
     }
 }
