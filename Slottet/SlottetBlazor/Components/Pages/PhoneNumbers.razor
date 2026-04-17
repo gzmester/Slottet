@@ -9,6 +9,14 @@
     Arbejdstelefoner
 </h1>
 
+//Vis en fejlmeddelelse hvis der opstår en fejl ved at gemme tildelingen, tilføjelsen, redigeringen eller sletningen af et telefonnummer
+@if (saveError)
+{
+    <div class="alert alert-danger">
+        Noget gik galt — prøv igen.
+    </div>
+}
+
 <!-- Liste over telefonnumre og tildeling -->
 <!-- foreach loop som itererer over phoneNumbers listen med bootstrap som sørger for at navn og telefonnummer vises ved siden af hinanden -->
 @foreach(var phoneNumber in phoneNumbers)
@@ -28,17 +36,16 @@
 <button class="btn btn-primary rounded-pill px-3 mt-3" @onclick="() => AddPhoneNumberAsync()">+ Tilføj Telefonnummer</button>
 
 
-@if(showModal)
+@if(showAddModal)
 {
     <div class="modal d-block" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Tilføj Ansat</h5>
+                    <h5 class="modal-title">Tilføj nummer</h5>
                     <button type="button" class="btn-close" @onclick="() => CloseModal()" aria-label="Close"></button>
                 </div>
-                @* Formular til at tilføje en ny ansat 
-                Hvor hvert felt har en inputfelt
+                @* Formular til at tilføje et nyt telefonnummer 
                 mb-3 er afstnanden mellem hvert felt
                 form-label giver skriftstørrelse til label
                 form-control giver inputfeltet en bestemt størrelse og stil*@
@@ -59,20 +66,47 @@
     <div class="modal-backdrop fade show"></div>
 }
 
-@if (saveError)
+@if(showEditModal)
 {
-    <div class="alert alert-danger">
-        Noget gik galt — prøv igen.
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Rediger nummer</h5>
+                    <button type="button" class="btn-close" @onclick="() => CloseModal()" aria-label="Close"></button>
+                </div>
+                @* Formular til at redigere et eksisterende telefonnummer 
+                mb-3 er afstnanden mellem hvert felt
+                form-label giver skriftstørrelse til label
+                form-control giver inputfeltet en bestemt størrelse og stil*@
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nyt nummer</label>
+                        <input type="text" class="form-control" @bind="newNumber" placeholder="@editingPhone?.Number" />
+                    </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => CloseModal()">Luk</button>
+                    <button type="button" class="btn btn-primary" @onclick="ConfirmEditAsync">Gem</button>
+                </div>
+            </div>
+        </div>
     </div>
+    </div>
+    @*Gør baggrunden mørkere mens modalen er åben, så man kan skelne mellem baggrunden og modalen*@
+    <div class="modal-backdrop fade show"></div>
 }
+
+
+
 @code {
     private bool saveError = false;
-    private bool showModal = false;
+    private bool showAddModal = false;
+    private bool showEditModal = false;
     private string newNumber = string.Empty;
-
-    //Mock data - skal senere hentes fra database
+    private PhoneNumberResponseDto? editingPhone = null;
     private List<PhoneNumberResponseDto> phoneNumbers = new List<PhoneNumberResponseDto>();
 
+    //Metode der henter alle telefonnumre fra API'et når siden indlæses, og gemmer dem i phoneNumbers listen
     protected override async Task OnInitializedAsync()
     {
         var http = HttpClientFactory.CreateClient("API");
@@ -81,9 +115,10 @@
         if (result is not null) phoneNumbers = result;
     }
 
-    //metode som udfydles senere
+    //Metode der gemmer tildelingen af et telefonnummer til en person, ved at sende en PATCH request til API'et med det opdaterede phoneNumber objekt
     private async Task SaveAssignmentAsync(PhoneNumberResponseDto phoneNumber)
     {
+        saveError = false;
         var http = HttpClientFactory.CreateClient("API");
         var response = await http.PatchAsJsonAsync($"api/phoneNumber/{phoneNumber.Id}/assignment", phoneNumber.AssignedTo);
         
@@ -93,14 +128,16 @@
         }
     }
 
-    //metode som udfydles senere
+    //Metode der åbner modal til at tilføje et nyt telefonnummer, ved at sætte showAddModal til true
     private async Task AddPhoneNumberAsync()
     {
-        showModal = true;
+        showAddModal = true;
     }
 
+    //Metode der sender en POST request til API'et med det nye telefonnummer, og hvis det lykkes, tilføjer det til phoneNumbers listen og lukker modalen
     private async Task ConfirmAddAsync()
     {
+        saveError = false;
          var http = HttpClientFactory.CreateClient("API");
          var dto = new PhoneNumberCreateDto { Number = newNumber};
          var response = await http.PostAsJsonAsync("api/phoneNumber", dto);
@@ -109,29 +146,61 @@
          {
             var created = await response.Content.ReadFromJsonAsync<PhoneNumberResponseDto>();
             if (created is not null) phoneNumbers.Add(created);
-            showModal = false;
+            showAddModal = false;
             newNumber = string.Empty;    
+         }
+         else
+         {
+            saveError = true;
          }
     }
 
-    //metode som udfydles senere
+    //Metode der åbner modal til at redigere et eksisterende telefonnummer, ved at sætte showEditModal til true og gemme det valgte phoneNumber i editingPhone
     private async Task EditPhoneNumberAsync(PhoneNumberResponseDto phoneNumber)
     {
-        
+        editingPhone = phoneNumber;
+        showEditModal = true;
     }
 
-    //metode som udfydles senere
+    //Metode der sender en PUT request til API'et med det opdaterede telefonnummer, og hvis det lykkes, opdaterer det i phoneNumbers listen og lukker modalen
+    private async Task ConfirmEditAsync()
+    {
+        saveError = false;
+        if (editingPhone is null) return;
+
+        var http = HttpClientFactory.CreateClient("API");
+        var dto = new PhoneNumberUpdateDto { Number = newNumber };
+        var response = await http.PutAsJsonAsync($"api/phoneNumber/{editingPhone.Id}", dto);
+        if (response.IsSuccessStatusCode)
+        {
+            editingPhone.Number = newNumber;
+            showEditModal = false;
+            newNumber = string.Empty;
+            editingPhone = null;
+        }
+        else
+        {
+            saveError = true;
+        }
+    }
+
+    //Metode der sender en DELETE request til API'et med det valgte telefonnummer, og hvis det lykkes, fjerner det fra phoneNumbers listen
     private async Task DeletePhoneNumberAsync(PhoneNumberResponseDto phoneNumber)
     {
+        saveError = false;
         var http = HttpClientFactory.CreateClient("API");
-        var response = await http.DeleteAsync($"api/phonenumber/{phoneNumber.Id}");
+        var response = await http.DeleteAsync($"api/phoneNumber/{phoneNumber.Id}");
         
         if (response.IsSuccessStatusCode)
             phoneNumbers.Remove(phoneNumber);
+        else
+            saveError = true;
     }
 
+    //Metode der lukker både add og edit modal ved at sætte showAddModal og showEditModal til false
     private void CloseModal()
     {
-        showModal = false;
+        showAddModal = false;
+        showEditModal = false;
     }
 }
