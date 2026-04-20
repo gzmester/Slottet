@@ -5,15 +5,23 @@
     box-shadow: 0 2px 4px rgba(20, 20, 20, 0.5);
 }
 
+.flex-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+
+
 
 /* header table */
 .resident-header-table {
+    background-color: white;
     width: 100%;
     margin-bottom: -4px;
     
     border-collapse: separate;
     border-spacing: 0;
-    border: 3px solid #ffffff;
     border-radius: 15px;
     overflow: hidden;
 }
@@ -21,12 +29,15 @@
 .resident-header-table th{
     padding: 5px 5px 5px 12px;
     text-align: left;
-    background-color: #ffffff;
+    background-color: rgb(220, 220, 220);
     font-weight: bold;
 }
+th.risk-low { background-color: #62e862; border-color: #62e862; }
+th.risk-medium { background-color: #ffff3c; border-color: #ffff3c; }
+th.risk-high { background-color: #fe4646; border-color: #fe4646; }
 
 .resident-header-table td {
-    padding: 6px;
+    padding: 0px 0px 5px 0px;
     text-align: left;
 }
 
@@ -75,24 +86,65 @@
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 14px;
+    vertical-align: center;
+    margin: 0px 0px 1px 0px;
 }
+.table-input::placeholder {
+    color: #999;
+    font-style: italic;
+}
+
+.checkbox-input {
+    height: 30px;
+    width: 30px;
+    vertical-align: middle;
+}
+
 
 
 .dropdown-risk-input {
-    width: 100%;
+    background-color: rgb(220, 220, 220);
+    width: 98%;
     padding: 8px;
-    margin: 0 0 0 0px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    margin: -2px 0px 0px 0px;
     font-size: 14px;
+
+    border: 1px solid rgb(220, 220, 220);
+    border-bottom-right-radius: 10px;   
+    border-bottom-left-radius: 10px;   
+
+    cursor: pointer;
 }
+.risk-low { background-color: #62e862; border-color: #62e862; }
+.risk-medium { background-color: #ffff3c; border-color: #ffff3c; }
+.risk-high { background-color: #fe4646; border-color: #fe4646; }
+
+.dropdown-risk-input:focus {
+    outline: none;
+    border-bottom: black solid 2.4px;
+    border-left: black solid 2.4px;
+
+    padding: 8px 8px 6.2px 6.2px;
+}
+
+
 .dropdown-mood-input {
+    background-color: white;
     width: 100%;
     padding: 8px;
     margin: 0 0 0 0px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
     font-size: 14px;
+
+    border: 0px solid #ddd;
+    border-bottom-right-radius: 15px;
+    border-bottom: black solid 2.4px;
+
+    cursor: pointer;
+}
+.dropdown-mood-input:focus {
+    outline: none;
+    border-bottom: black solid 2.4px;
+    border-right: black solid 2.4px;
 }
 
 
