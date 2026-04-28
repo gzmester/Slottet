@@ -18,6 +18,7 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
     public DbSet<PNMedicin> PNMedicins { get; set; }
     public DbSet<Status> Statuses { get; set; }
     public DbSet<PhoneNumber> PhoneNumbers { get; set; }
+    public DbSet<Shift> Shifts { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -127,6 +128,22 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Number).HasMaxLength(8).IsRequired();
             entity.Property(e => e.AssignedTo).HasMaxLength(50);
+        });
+
+        // Shift
+        modelBuilder.Entity<Shift>(entity =>
+        {
+            entity.ToTable("Shift");
+            entity.HasKey(e => e.ShiftID);
+            entity.Property(e => e.ShiftType)
+                  .HasConversion<string>()
+                  .HasMaxLength(20)
+                  .IsRequired();
+            entity.Property(e => e.Date).IsRequired();
+
+            entity.HasOne(e => e.Employee)
+                  .WithMany(emp => emp.Shifts)
+                  .HasForeignKey(e => e.EmployeeID);
         });
 
     }

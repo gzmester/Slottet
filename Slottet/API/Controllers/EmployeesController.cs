@@ -52,7 +52,7 @@ public class EmployeesController : ControllerBase
         var employee = await _db.Employees
             .Include(e => e.Location)
             .Include(e => e.Roles)
-            .FirstOrDefaultAsync(e => e.EmployeeID == id);
+            .FirstOrDefaultAsync(e => e.Id == id);
 
         if (employee is null)
             return NotFound();

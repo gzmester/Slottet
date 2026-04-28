@@ -19,4 +19,7 @@ public class Employee : IdentityUser<int>
 
     // Many-to-many via linking table
     public ICollection<Role> Roles { get; set; } = new List<Role>();
+
+    // One-to-many
+    public ICollection<Shift> Shifts { get; set; } = new List<Shift>();
 }

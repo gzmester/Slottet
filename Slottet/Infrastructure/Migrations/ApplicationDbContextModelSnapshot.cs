@@ -320,6 +320,32 @@ namespace Infrastructure.Migrations
                     b.ToTable("Role", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.Shift", b =>
+                {
+                    b.Property<int>("ShiftID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ShiftID"));
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("EmployeeID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ShiftType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.HasKey("ShiftID");
+
+                    b.HasIndex("EmployeeID");
+
+                    b.ToTable("Shift", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.Status", b =>
                 {
                     b.Property<int>("StatusID")
@@ -515,6 +541,17 @@ namespace Infrastructure.Migrations
                     b.Navigation("Location");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Shift", b =>
+                {
+                    b.HasOne("Domain.Entities.Employee", "Employee")
+                        .WithMany("Shifts")
+                        .HasForeignKey("EmployeeID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
             modelBuilder.Entity("Domain.Entities.Status", b =>
                 {
                     b.HasOne("Domain.Entities.Resident", "Resident")
@@ -595,6 +632,11 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.Authorization", b =>
                 {
                     b.Navigation("Employees");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Employee", b =>
+                {
+                    b.Navigation("Shifts");
                 });
 
             modelBuilder.Entity("Domain.Entities.Location", b =>
