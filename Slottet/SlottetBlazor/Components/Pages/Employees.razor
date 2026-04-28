@@ -59,23 +59,23 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Fornavn</label>
-                        <input type="text" class="form-control" @bind="newFirstName" />
+                        <input type="text" maxlength="30" class="form-control" @bind="newFirstName" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Efternavn</label>
-                        <input type="text" class="form-control" @bind="newLastName" />
+                        <input type="text" maxlength="30" class="form-control" @bind="newLastName" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">E-mail</label>
-                        <input type="email" class="form-control" @bind="newEmail" />
+                        <input type="email" maxlength="45" class="form-control" @bind="newEmail" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Telefonnummer</label>
-                        <input type="tel" class="form-control" @bind="newPhoneNumber" />
+                        <input type="tel" maxlength="8" class="form-control" @bind="newPhoneNumber" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Pinkode</label>
-                        <input type="password" class="form-control" @bind="newPinCode" />
+                        <input type="password" maxlength="6" class="form-control" @bind="newPinCode" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Lokation</label>
@@ -194,7 +194,7 @@
             FirstName       = newFirstName,
             LastName        = newLastName,
             Email           = newEmail,
-            PhoneNumber     = phone,
+            PhoneNumber     = newPhoneNumber,
             PinCode         = pin,
             LocationID      = newLocationID,
             AuthorizationID = newAuthorizationID,
@@ -220,7 +220,7 @@
     private async Task DeleteEmployeeAsync(EmployeeResponseDto employee)
     {
         var http = HttpClientFactory.CreateClient("API");
-        var response = await http.DeleteAsync($"api/employees/{employee.EmployeeID}");
+        var response = await http.DeleteAsync($"api/employees/{employee.Id}");
         if (response.IsSuccessStatusCode)
             employees.Remove(employee);
     }

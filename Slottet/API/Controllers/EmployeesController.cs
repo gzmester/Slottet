@@ -53,6 +53,7 @@ public class EmployeesController : ControllerBase
             .Include(e => e.Location)
             .Include(e => e.Roles)
             .FirstOrDefaultAsync(e => e.EmployeeID == id);
+
         if (employee is null)
             return NotFound();
 
@@ -93,7 +94,7 @@ public class EmployeesController : ControllerBase
         await _db.Entry(employee).Reference(e => e.Location).LoadAsync();
         await _db.Entry(employee).Collection(e => e.Roles).LoadAsync();
 
-        return CreatedAtAction(nameof(GetById), new { id = employee.EmployeeID }, MapToResponseDto(employee));
+        return CreatedAtAction(nameof(GetById), new { id = employee.Id }, MapToResponseDto(employee));
     }
 
     // PUT /api/employees/{id}
@@ -103,7 +104,7 @@ public class EmployeesController : ControllerBase
         var employee = await _db.Employees
             .Include(e => e.Location)
             .Include(e => e.Roles)
-            .FirstOrDefaultAsync(e => e.EmployeeID == id);
+            .FirstOrDefaultAsync(e => e.Id == id);
 
         if (employee is null)
             return NotFound();
@@ -153,16 +154,16 @@ public class EmployeesController : ControllerBase
     // --------------------------------------------------------
     private static EmployeeResponseDto MapToResponseDto(Employee e) => new()
     {
-        EmployeeID      = e.EmployeeID,
+        Id              = e.Id,
         FirstName       = e.FirstName,
         LastName        = e.LastName,
-        Email           = e.Email,
-        PhoneNumber     = e.PhoneNumber,
+        Email           = e.Email!,
+        PhoneNumber     = e.PhoneNumber!,
         ShiftType       = e.ShiftType.ToString(),
         PinCode         = e.PinCode,
         LocationID      = e.LocationID,
         LocationName    = e.Location?.Name ?? string.Empty,
         AuthorizationID = e.AuthorizationID,
-        Roles           = e.Roles.Select(r => r.Name).ToList()
+        Roles           = e.Roles.Select(r => r.Name).ToList()!
     };
 }

@@ -2,6 +2,11 @@ using DotNetEnv;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
+using Domain.Entities;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+
 // Load .env file for local development
 Env.TraversePath().Load();
 
@@ -10,6 +15,30 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
+
+/// ========================= Authentication & Identity Middleware Setup =========================
+// 1. Add Identity Services
+builder.Services.AddIdentity<Employee, Role>()
+    .AddEntityFrameworkStores<ApplicationDbContext>();
+
+// 2. Add JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+builder.Services.AddAuthentication(options => {
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options => {
+    options.TokenValidationParameters = new TokenValidationParameters {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
+    };
+});
+/// =============================================================================================
 
 // Build connection string: prefer env vars (Docker/CI), fall back to appsettings.json
 var dbHost = Environment.GetEnvironmentVariable("DB_HOST");

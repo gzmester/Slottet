@@ -2,11 +2,11 @@ namespace Application.DTOs.Employee;
 
 public class EmployeeResponseDto
 {
-    public int EmployeeID { get; set; }
+    public int Id { get; set; }
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
-    public int PhoneNumber { get; set; }
+    public string PhoneNumber { get; set; } = string.Empty;
     public string ShiftType { get; set; } = string.Empty;
     public int PinCode { get; set; }
     public int LocationID { get; set; }

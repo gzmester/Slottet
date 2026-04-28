@@ -14,7 +14,7 @@ public class EmployeeCreateDto
     public string Email { get; set; } = string.Empty;
 
     [Required]
-    public int PhoneNumber { get; set; }
+    public string PhoneNumber { get; set; } = string.Empty;
 
     [Required]
     public string ShiftType { get; set; } = string.Empty;

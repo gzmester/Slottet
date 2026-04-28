@@ -83,10 +83,9 @@ public static class DataSeeder
         // --- Employees ---
         var emp1 = new Employee
         {
-            FirstName = "Mette",
             LastName = "Hansen",
             Email = "mette.hansen@slottet.dk",
-            PhoneNumber = 12345678,
+            PhoneNumber = "12345678",
             ShiftType = ShiftType.Day,
             PinCode = 1234,
             LocationID = location1.LocationID,
@@ -98,7 +97,7 @@ public static class DataSeeder
             FirstName = "Lars",
             LastName = "Jensen",
             Email = "lars.jensen@slottet.dk",
-            PhoneNumber = 87654321,
+            PhoneNumber = "87654321",
             ShiftType = ShiftType.Night,
             PinCode = 5678,
             LocationID = location1.LocationID,
@@ -110,7 +109,7 @@ public static class DataSeeder
             FirstName = "Sofie",
             LastName = "Nielsen",
             Email = "sofie.nielsen@slottet.dk",
-            PhoneNumber = 11223344,
+            PhoneNumber = "11223344",
             ShiftType = ShiftType.Midday,
             PinCode = 9012,
             LocationID = location2.LocationID,
