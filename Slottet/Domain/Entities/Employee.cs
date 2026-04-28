@@ -1,14 +1,12 @@
 using Domain.Enums;
+using Microsoft.AspNetCore.Identity;
 
 namespace Domain.Entities;
 
-public class Employee
+public class Employee : IdentityUser<int>
 {
-    public int EmployeeID { get; set; }
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public int PhoneNumber { get; set; }
     public ShiftType ShiftType { get; set; }
     public int PinCode { get; set; }
 

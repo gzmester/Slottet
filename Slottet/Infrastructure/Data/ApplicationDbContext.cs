@@ -1,10 +1,11 @@
 using Domain.Entities;
 using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace Infrastructure.Data;
 
-public class ApplicationDbContext : DbContext
+public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options) { }
@@ -13,7 +14,6 @@ public class ApplicationDbContext : DbContext
     public DbSet<Resident> Residents { get; set; }
     public DbSet<Employee> Employees { get; set; }
     public DbSet<Authorization> Authorizations { get; set; }
-    public DbSet<Role> Roles { get; set; }
     public DbSet<Medicin> Medicins { get; set; }
     public DbSet<PNMedicin> PNMedicins { get; set; }
     public DbSet<Status> Statuses { get; set; }
@@ -70,7 +70,6 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Employee>(entity =>
         {
             entity.ToTable("Employee");
-            entity.HasKey(e => e.EmployeeID);
             entity.Property(e => e.FirstName).HasMaxLength(50).IsRequired();
             entity.Property(e => e.LastName).HasMaxLength(50).IsRequired();
             entity.Property(e => e.Email).HasMaxLength(80);

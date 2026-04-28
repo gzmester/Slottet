@@ -194,7 +194,7 @@
             FirstName       = newFirstName,
             LastName        = newLastName,
             Email           = newEmail,
-            PhoneNumber     = phone,
+            PhoneNumber     = newPhoneNumber,
             PinCode         = pin,
             LocationID      = newLocationID,
             AuthorizationID = newAuthorizationID,
@@ -220,7 +220,7 @@
     private async Task DeleteEmployeeAsync(EmployeeResponseDto employee)
     {
         var http = HttpClientFactory.CreateClient("API");
-        var response = await http.DeleteAsync($"api/employees/{employee.EmployeeID}");
+        var response = await http.DeleteAsync($"api/employees/{employee.Id}");
         if (response.IsSuccessStatusCode)
             employees.Remove(employee);
     }
