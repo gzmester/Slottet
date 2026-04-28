@@ -53,7 +53,6 @@ public class EmployeesController : ControllerBase
             .Include(e => e.Location)
             .Include(e => e.Roles)
             .FirstOrDefaultAsync(e => e.EmployeeID == id);
-
         if (employee is null)
             return NotFound();
 
