@@ -1,4 +1,3 @@
-using Domain.Enums;
 using Microsoft.AspNetCore.Identity;
 
 namespace Domain.Entities;
@@ -7,7 +6,6 @@ public class Employee : IdentityUser<int>
 {
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
-    public ShiftType ShiftType { get; set; }
     public int PinCode { get; set; }
 
     // FKs

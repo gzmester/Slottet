@@ -86,7 +86,6 @@ public static class DataSeeder
             LastName = "Hansen",
             Email = "mette.hansen@slottet.dk",
             PhoneNumber = "12345678",
-            ShiftType = ShiftType.Day,
             PinCode = 1234,
             LocationID = location1.LocationID,
             AuthorizationID = authAdmin.AuthorizationID,
@@ -98,7 +97,6 @@ public static class DataSeeder
             LastName = "Jensen",
             Email = "lars.jensen@slottet.dk",
             PhoneNumber = "87654321",
-            ShiftType = ShiftType.Night,
             PinCode = 5678,
             LocationID = location1.LocationID,
             AuthorizationID = authEmployee.AuthorizationID,
@@ -110,13 +108,20 @@ public static class DataSeeder
             LastName = "Nielsen",
             Email = "sofie.nielsen@slottet.dk",
             PhoneNumber = "11223344",
-            ShiftType = ShiftType.Midday,
             PinCode = 9012,
             LocationID = location2.LocationID,
             AuthorizationID = authEmployee.AuthorizationID,
             Roles = new List<Role> { roleCaregiver, roleNurse }
         };
         db.Employees.AddRange(emp1, emp2, emp3);
+        await db.SaveChangesAsync();
+
+        // --- Shifts ---
+        db.Shifts.AddRange(
+            new Shift { ShiftType = ShiftType.Day,    Date = DateTime.Today, EmployeeID = emp1.Id },
+            new Shift { ShiftType = ShiftType.Night,  Date = DateTime.Today, EmployeeID = emp2.Id },
+            new Shift { ShiftType = ShiftType.Midday, Date = DateTime.Today, EmployeeID = emp3.Id }
+        );
         await db.SaveChangesAsync();
 
         // --- Residents ---

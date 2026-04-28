@@ -13,7 +13,6 @@
 
 using Application.DTOs.Employee;
 using Domain.Entities;
-using Domain.Enums;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -64,9 +63,6 @@ public class EmployeesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<EmployeeResponseDto>> Create(EmployeeCreateDto dto)
     {
-        if (!Enum.TryParse<ShiftType>(dto.ShiftType, ignoreCase: true, out var shiftType))
-            return BadRequest($"Ugyldig ShiftType: '{dto.ShiftType}'. Gyldige værdier: {string.Join(", ", Enum.GetNames<ShiftType>())}");
-
         var locationExists = await _db.Locations.AnyAsync(l => l.LocationID == dto.LocationID);
         if (!locationExists)
             return BadRequest($"Location med ID {dto.LocationID} findes ikke.");
@@ -81,7 +77,6 @@ public class EmployeesController : ControllerBase
             LastName        = dto.LastName,
             Email           = dto.Email,
             PhoneNumber     = dto.PhoneNumber,
-            ShiftType       = shiftType,
             PinCode         = dto.PinCode,
             LocationID      = dto.LocationID,
             AuthorizationID = dto.AuthorizationID
@@ -109,9 +104,6 @@ public class EmployeesController : ControllerBase
         if (employee is null)
             return NotFound();
 
-        if (!Enum.TryParse<ShiftType>(dto.ShiftType, ignoreCase: true, out var shiftType))
-            return BadRequest($"Ugyldig ShiftType: '{dto.ShiftType}'. Gyldige værdier: {string.Join(", ", Enum.GetNames<ShiftType>())}");
-
         var locationExists = await _db.Locations.AnyAsync(l => l.LocationID == dto.LocationID);
         if (!locationExists)
             return BadRequest($"Location med ID {dto.LocationID} findes ikke.");
@@ -124,7 +116,6 @@ public class EmployeesController : ControllerBase
         employee.LastName        = dto.LastName;
         employee.Email           = dto.Email;
         employee.PhoneNumber     = dto.PhoneNumber;
-        employee.ShiftType       = shiftType;
         employee.PinCode         = dto.PinCode;
         employee.LocationID      = dto.LocationID;
         employee.AuthorizationID = dto.AuthorizationID;
@@ -159,7 +150,6 @@ public class EmployeesController : ControllerBase
         LastName        = e.LastName,
         Email           = e.Email!,
         PhoneNumber     = e.PhoneNumber!,
-        ShiftType       = e.ShiftType.ToString(),
         PinCode         = e.PinCode,
         LocationID      = e.LocationID,
         LocationName    = e.Location?.Name ?? string.Empty,

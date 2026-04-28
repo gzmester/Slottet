@@ -17,9 +17,6 @@ public class EmployeeUpdateDto
     public string PhoneNumber { get; set; } = string.Empty;
 
     [Required]
-    public string ShiftType { get; set; } = string.Empty;
-
-    [Required]
     public int PinCode { get; set; }
 
     [Required]

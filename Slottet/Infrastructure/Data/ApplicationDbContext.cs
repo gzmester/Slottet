@@ -74,9 +74,6 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
             entity.Property(e => e.FirstName).HasMaxLength(50).IsRequired();
             entity.Property(e => e.LastName).HasMaxLength(50).IsRequired();
             entity.Property(e => e.Email).HasMaxLength(80);
-            entity.Property(e => e.ShiftType)
-                  .HasConversion<string>()
-                  .HasMaxLength(20);
 
             entity.HasOne(e => e.Location)
                   .WithMany(l => l.Employees)
