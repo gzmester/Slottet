@@ -1,6 +1,7 @@
 ﻿@page "/PhoneNumbers"
 @rendermode InteractiveServer
 @using Application.DTOs.PhoneNumber
+@using System.Diagnostics
 
 @inject IHttpClientFactory HttpClientFactory
 
@@ -110,10 +111,19 @@
     //Metode der henter alle telefonnumre fra API'et når siden indlæses, og gemmer dem i phoneNumbers listen
     protected override async Task OnInitializedAsync()
     {
-        var http = HttpClientFactory.CreateClient("API");
-
-        var result = await http.GetFromJsonAsync<List<PhoneNumberResponseDto>>("api/phoneNumber");
-        if (result is not null) phoneNumbers = result;
+        try
+        {
+            var http = HttpClientFactory.CreateClient("API");
+            // This is the call that crashes the app if not caught
+            var result = await http.GetFromJsonAsync<List<PhoneNumberResponseDto>>("api/phoneNumber");
+            
+            if (result is not null) 
+                phoneNumbers = result;
+        }
+        catch (HttpRequestException e)
+        {
+            Debug.WriteLine(e.Message);
+        }
     }
 
     //Metode der gemmer tildelingen af et telefonnummer til en person, ved at sende en PATCH request til API'et med det opdaterede phoneNumber objekt

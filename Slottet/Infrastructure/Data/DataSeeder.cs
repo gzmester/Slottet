@@ -83,10 +83,11 @@ public static class DataSeeder
         // --- Employees ---
         var emp1 = new Employee
         {
+            FirstName = "Mette",
             LastName = "Hansen",
             Email = "mette.hansen@slottet.dk",
             PhoneNumber = "12345678",
-            PinCode = 1234,
+            PinCode = 123456,
             LocationID = location1.LocationID,
             AuthorizationID = authAdmin.AuthorizationID,
             Roles = new List<Role> { roleCoordinator, roleNurse }
@@ -97,7 +98,7 @@ public static class DataSeeder
             LastName = "Jensen",
             Email = "lars.jensen@slottet.dk",
             PhoneNumber = "87654321",
-            PinCode = 5678,
+            PinCode = 567890,
             LocationID = location1.LocationID,
             AuthorizationID = authEmployee.AuthorizationID,
             Roles = new List<Role> { roleCaregiver }
@@ -108,7 +109,7 @@ public static class DataSeeder
             LastName = "Nielsen",
             Email = "sofie.nielsen@slottet.dk",
             PhoneNumber = "11223344",
-            PinCode = 9012,
+            PinCode = 901234,
             LocationID = location2.LocationID,
             AuthorizationID = authEmployee.AuthorizationID,
             Roles = new List<Role> { roleCaregiver, roleNurse }

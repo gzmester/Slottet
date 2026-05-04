@@ -95,6 +95,8 @@ app.UseHttpsRedirection();
 
 app.UseCors("BlazorClient");
 
+
+
 app.MapControllers();  // aktiver alle [ApiController] klasser
 
 app.Run();

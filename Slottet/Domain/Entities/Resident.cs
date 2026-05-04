@@ -9,10 +9,10 @@ public class Resident
     public string LastName { get; set; } = string.Empty;
     public string Room { get; set; } = string.Empty;
     public RiskLevel RiskLevel { get; set; }
-    public DateTime ShoppingDay { get; set; }
+    public string ShoppingDay { get; set; } = string.Empty;
     public string Payment { get; set; } = string.Empty;
 
-    // FK
+    // FKd
     public int LocationID { get; set; }
     public Location Location { get; set; } = null!;
 

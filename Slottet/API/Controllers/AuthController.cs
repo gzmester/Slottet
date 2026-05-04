@@ -8,6 +8,7 @@ using System.Security.Claims;
 using System.Text;
 using Domain.Entities;
 using Application.DTOs.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers
 {
@@ -27,36 +28,47 @@ namespace API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel model)
         {
-            // 1. Search for the employee using the passcode as their username
-            var user = await _userManager.FindByNameAsync(model.Passcode);
+            // 1. Search for the employee using the pincode from the database and include roles
+            var user = await _userManager.Users.Include(u => u.Roles).FirstOrDefaultAsync(u => u.PinCode == model.Pincode);
 
-            // 2. In this specific "Passcode-only" setup, if the user exists, 
-            // they are authenticated (since the passcode IS the credential).
+            // 2. If user exists with matching pincode, generate JWT token
             if (user != null)
             {
                 var token = GenerateJwtToken(user);
-                return Ok(new { Token = token });
+                var employeeName = $"{user.FirstName} {user.LastName}".Trim();
+                return Ok(new AuthResponseDto { Token = token, EmployeeName = employeeName });
             }
 
-            return Unauthorized("Invalid Passcode.");
+            return Unauthorized(new { message = "Invalid Pincode." });
         }
 
         private string GenerateJwtToken(Employee user)
         {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-            // The token still carries the Employee's name so the UI can greet them
-            var claims = new[] {
+            // Build claims list with roles
+            var claimsList = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
+                new Claim("EmployeeId", user.Id.ToString())
             };
+
+            // Add role claims for each role the employee has
+            if (user.Roles != null && user.Roles.Any())
+            {
+                foreach (var role in user.Roles)
+                {
+                    claimsList.Add(new Claim(ClaimTypes.Role, role.Name ?? string.Empty));
+                }
+            }
 
             var token = new JwtSecurityToken(
                 _config["Jwt:Issuer"],
                 _config["Jwt:Audience"],
-                claims,
-                expires: DateTime.Now.AddHours(12), // Longer session for internal app
+                claimsList,
+                expires: DateTime.UtcNow.AddHours(12), // Longer session for internal app
                 signingCredentials: credentials);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
