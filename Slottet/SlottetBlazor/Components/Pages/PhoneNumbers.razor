@@ -24,13 +24,13 @@
 {
     <div class="d-flex align-items-center gap-3 mb-2">
         <span class="number" style="width: 48px">@phoneNumber.Number</span>
-        <input type="text" class="flex-grow-1 rounded-pill bg-secondary bg-opacity-10 px-3 py-2" @bind="@phoneNumber.AssignedTo" placeholder="Angiv navn"/>
+        <input type="text" style="max-width: 400px" class="flex-grow-1 rounded-pill bg-secondary bg-opacity-10 px-3 py-2" @bind="@phoneNumber.AssignedTo" placeholder="Angiv navn"/>
         @* todo: Wrap slet knap i AuthorizeView Roles="Admin" så det kun er admin der kan slette telefon nummer *@
-        <button class="btn btn-danger rounded-pill px-3" @onclick="() => DeletePhoneNumberAsync(phoneNumber )">Slet</button>
+        <button class="btn btn-danger rounded-pill px-3 btn btn-sm" @onclick="() => DeletePhoneNumberAsync(phoneNumber )">Slet</button>
         @* todo: Wrap rediger knap i AuthorizeView Roles="Admin" så det kun er admin der kan redigere telefon nummer *@
-        <button class="btn btn-secondary rounded-pill px-3" @onclick="() => EditPhoneNumberAsync(phoneNumber)">Rediger</button>
+        <button class="btn btn-secondary rounded-pill px-3 btn btn-sm" @onclick="() => EditPhoneNumberAsync(phoneNumber)">Rediger</button>
         @* knap til at gemme tildeling af telefonnum,meret, så det hele tiden vises i listen indtil det ændres ved vagtskifte*@
-        <button class="btn btn-primary rounded-pill px-3" @onclick="() => SaveAssignmentAsync(phoneNumber)">Gem</button>
+        <button class="btn btn-primary rounded-pill px-3 btn btn-sm" @onclick="() => SaveAssignmentAsync(phoneNumber)">Gem</button>
     </div>
 }
 @* todo: Wrap tilføj knap i AuthorizeView Roles="Admin" så det kun er admin der kan tilføje telefon nummer *@
