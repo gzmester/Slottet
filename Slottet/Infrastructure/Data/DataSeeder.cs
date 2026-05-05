@@ -132,7 +132,7 @@ public static class DataSeeder
             LastName = "Mortensen",
             Room = "101",
             RiskLevel = RiskLevel.Green,
-            ShoppingDay = DateTime.Today.AddDays(3),
+            ShoppingDay = "Mandag",
             Payment = "Folkepension",
             LocationID = location1.LocationID
         };
@@ -142,7 +142,7 @@ public static class DataSeeder
             LastName = "Christensen",
             Room = "102",
             RiskLevel = RiskLevel.Yellow,
-            ShoppingDay = DateTime.Today.AddDays(5),
+            ShoppingDay = "Torsdag",
             Payment = "Privat betaling",
             LocationID = location1.LocationID
         };
@@ -152,7 +152,7 @@ public static class DataSeeder
             LastName = "Pedersen",
             Room = "201",
             RiskLevel = RiskLevel.Red,
-            ShoppingDay = DateTime.Today.AddDays(1),
+            ShoppingDay = " Fredag",
             Payment = "Kommunal støtte",
             LocationID = location2.LocationID
         };
