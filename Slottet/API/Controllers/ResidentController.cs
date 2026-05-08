@@ -4,11 +4,14 @@ using Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    //[Authorize]
     public class ResidentController : ControllerBase
     {
         private readonly ApplicationDbContext _db;

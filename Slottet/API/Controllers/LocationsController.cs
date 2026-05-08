@@ -2,9 +2,12 @@ using Application.DTOs.Location;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace API.Controllers;
 
+//[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class LocationsController : ControllerBase

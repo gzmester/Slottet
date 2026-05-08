@@ -19,6 +19,7 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
     public DbSet<Status> Statuses { get; set; }
     public DbSet<PhoneNumber> PhoneNumbers { get; set; }
     public DbSet<Shift> Shifts { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -141,6 +142,18 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
             entity.HasOne(e => e.Employee)
                   .WithMany(emp => emp.Shifts)
                   .HasForeignKey(e => e.EmployeeID);
+        });
+
+        //AuditLog
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.ToTable("AuditLog");
+            entity.HasKey(e => e.AuditId);
+            entity.Property(e => e.LogType).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.Action).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Entity).HasMaxLength(50);
+            entity.Property(e => e.EntityId).HasMaxLength(50);
+            entity.Property(e => e.UserName).HasMaxLength(100);
         });
 
     }
