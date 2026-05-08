@@ -9,6 +9,7 @@ using System.Text;
 using Domain.Entities;
 using Application.DTOs.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Infrastructure.Data;
 
 namespace API.Controllers
 {
@@ -18,11 +19,13 @@ namespace API.Controllers
     {
         private readonly UserManager<Employee> _userManager;
         private readonly IConfiguration _config;
+        private readonly ApplicationDbContext _db;
 
-        public AuthController(UserManager<Employee> userManager, IConfiguration config)
+        public AuthController(UserManager<Employee> userManager, IConfiguration config, ApplicationDbContext db)
         {
             _userManager = userManager;
             _config = config;
+            _db = db;
         }
 
         [HttpPost("login")]
@@ -36,8 +39,33 @@ namespace API.Controllers
             {
                 var token = GenerateJwtToken(user);
                 var employeeName = $"{user.FirstName} {user.LastName}".Trim();
+
+                // Log succesfuldt login
+                await _db.AuditLogs.AddAsync(new AuditLog
+                {
+                    LogType  = "Access",
+                    Action   = "LoggedIn",
+                    Entity   = "Auth",
+                    EntityId = user.Id.ToString(),
+                    UserId   = user.Id,
+                    UserName = employeeName
+                });
+                await _db.SaveChangesAsync();
+
                 return Ok(new AuthResponseDto { Token = token, EmployeeName = employeeName });
             }
+
+            // Log fejlet login
+            await _db.AuditLogs.AddAsync(new AuditLog
+            {
+                LogType  = "Access",
+                Action   = "FailedLogin",
+                Entity   = "Auth",
+                EntityId = "unknown",
+                UserId   = null,
+                UserName = "unknown"
+            });
+            await _db.SaveChangesAsync();
 
             return Unauthorized(new { message = "Invalid Pincode." });
         }

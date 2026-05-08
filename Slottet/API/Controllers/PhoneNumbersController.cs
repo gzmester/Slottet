@@ -3,9 +3,12 @@ using Domain.Entities;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace API.Controllers;
 
+//[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 
@@ -53,6 +56,18 @@ public class PhoneNumberController : ControllerBase
         _db.PhoneNumbers.Add(phoneNumber);
         await _db.SaveChangesAsync();
 
+        //Log oprettelsen i AuditLog
+        await _db.AuditLogs.AddAsync(new AuditLog
+        {
+            LogType = "Activity",
+            Action = "CreatedPhoneNumber",
+            Entity = "PhoneNumber",
+            EntityId = phoneNumber.Id.ToString(),
+            UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
+            UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
+        });
+        await _db.SaveChangesAsync();
+
         return CreatedAtAction(nameof(GetById), new { id = phoneNumber.Id }, MapToResponseDto(phoneNumber));
     }
 
@@ -66,6 +81,18 @@ public class PhoneNumberController : ControllerBase
 
         phoneNumber.Number = dto.Number;
 
+        await _db.SaveChangesAsync();
+
+        //Log opdateringen i AuditLog
+        await _db.AuditLogs.AddAsync(new AuditLog
+        {
+            LogType = "Activity",
+            Action = "UpdatedPhoneNumber",
+            Entity = "PhoneNumber",
+            EntityId = phoneNumber.Id.ToString(),
+            UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
+            UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
+        });
         await _db.SaveChangesAsync();
 
         return Ok(MapToResponseDto(phoneNumber));
@@ -82,6 +109,18 @@ public class PhoneNumberController : ControllerBase
         phoneNumber.AssignedTo = assignedTo;
         await _db.SaveChangesAsync();
 
+        //Log opdateringen i AuditLog
+        await _db.AuditLogs.AddAsync(new AuditLog
+        {
+            LogType = "Activity",
+            Action = "AssignedEmployeeToPhoneNumber",
+            Entity = "PhoneNumber",
+            EntityId = phoneNumber.Id.ToString(),
+            UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
+            UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
+        });
+        await _db.SaveChangesAsync();
+
         return Ok(MapToResponseDto(phoneNumber));
     }
 
@@ -94,6 +133,18 @@ public class PhoneNumberController : ControllerBase
         if(phoneNumber is null) return NotFound();
 
         _db.PhoneNumbers.Remove(phoneNumber);
+        await _db.SaveChangesAsync();
+
+        //Log sletningen i AuditLog
+        await _db.AuditLogs.AddAsync(new AuditLog
+        {
+            LogType = "Activity",
+            Action = "DeletedPhoneNumber",
+            Entity = "PhoneNumber",
+            EntityId = phoneNumber.Id.ToString(),
+            UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
+            UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
+        });
         await _db.SaveChangesAsync();
 
         return NoContent();

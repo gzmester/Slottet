@@ -16,9 +16,12 @@ using Domain.Entities;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace API.Controllers;
 
+//[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class EmployeesController : ControllerBase
@@ -85,6 +88,18 @@ public class EmployeesController : ControllerBase
         _db.Employees.Add(employee);
         await _db.SaveChangesAsync();
 
+        //Log oprettelsen i AuditLog
+        await _db.AuditLogs.AddAsync(new AuditLog
+        {
+            LogType = "Activity",
+            Action = "CreatedEmployee",
+            Entity = "Employee",
+            EntityId = employee.Id.ToString(),
+            UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
+            UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
+        });
+        await _db.SaveChangesAsync();
+
         // Hent den oprettede medarbejder med navigation properties
         await _db.Entry(employee).Reference(e => e.Location).LoadAsync();
         await _db.Entry(employee).Collection(e => e.Roles).LoadAsync();
@@ -122,6 +137,18 @@ public class EmployeesController : ControllerBase
 
         await _db.SaveChangesAsync();
 
+        //Log opdateringen i AuditLog
+        await _db.AuditLogs.AddAsync(new AuditLog
+        {
+            LogType = "Activity",
+            Action = "UpdatedEmployee",
+            Entity = "Employee",
+            EntityId = employee.Id.ToString(),
+            UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
+            UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
+        });
+        await _db.SaveChangesAsync();
+
         return Ok(MapToResponseDto(employee));
     }
 
@@ -135,6 +162,18 @@ public class EmployeesController : ControllerBase
             return NotFound();
 
         _db.Employees.Remove(employee);
+        await _db.SaveChangesAsync();
+
+        //Log sletningen i AuditLog
+        await _db.AuditLogs.AddAsync(new AuditLog
+        {
+            LogType = "Activity",
+            Action = "DeletedEmployee",
+            Entity = "Employee",
+            EntityId = employee.Id.ToString(),
+            UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
+            UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
+        });
         await _db.SaveChangesAsync();
 
         return NoContent();
