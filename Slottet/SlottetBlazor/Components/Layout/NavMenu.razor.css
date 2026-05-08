@@ -75,6 +75,13 @@
     margin-left: -0.5rem;
 }
 
+.icons-activitylog {
+    background-image: url('/images/icons/activitylog.svg');
+    filter: invert(100%);
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
 
 .nav-divider {
     border: none;

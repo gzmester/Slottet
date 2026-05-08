@@ -6,6 +6,7 @@
 
 <h1>Aktivitetslog</h1>
 
+<!-- Vis en fejlmeddelelse hvis der opstår en fejl ved at hente logs -->
 @if(loadError)
 {
     <div class="alert alert-danger">
@@ -13,6 +14,7 @@
     </div>
 }
 
+<!--Filtre til at søge i logs - dato, type, bruger og handling-->
 <div class="d-flex gap-3 mb-3 flex-wrap">
     <div>
         <label class="form-label">Fra Dato</label>
@@ -38,12 +40,14 @@
         <label class="form-label">Handling</label>
         <input type="text" class="form-control" @bind="filterAction" placeholder="Søg efter handling"/>
     </div>
+    <!-- Knapper til at anvende eller nulstille filtre -->
     <div class="d-flex align-items-end">
         <button class="btn btn-primary" @onclick="ApplyFilters">Søg</button>
         <button class="btn btn-secondary ms-2" @onclick="ResetFilters">Nulstil</button>
     </div>
 </div>
 
+<!-- Tabel til at vise logs med pages -->
 <table class="table table-striped">
     <thead>
         <tr>
@@ -56,6 +60,7 @@
         </tr>
     </thead>
     <tbody>
+        <!-- foreach loop som itererer over PagesLogs listen, som sørger for at loggens data vises i tabellen -->
         @foreach(var log in PagesLogs)
         {
             <tr>
@@ -70,21 +75,50 @@
     </tbody>
 </table>
 
+<!--Page knapper som vil se sådann ud "1 ... 8 9 10 11 12 ... 20" hvis man fx er på side 10 ud af 20-->
 <div class="d-flex align-items-center gap-2 mt-3">
-    <button class="btn btn-secondary btn-sm" @onclick="PreviousPage" disabled="@(CurrentPage == 1)">Forrige</button>
 
-    @for(int page = 1; page <= TotalPages; page++)
+    <!-- Knap til at gå til forrige side, deaktiveres hvis man er på første side -->
+    <button class="btn btn-secondary btn-sm" @onclick="PreviousPage" disabled="@(CurrentPage == 1)">Forrige</button>
+    <!-- Dynamiske knapper til at gå til specifikke sider, viser 2 sider på hver side af den aktuelle side -->
+    @if (CurrentPage > 3)
     {
-        var pageNum = page;
-        <button class="btn btn-sm @(CurrentPage == pageNum ? "btn-primary" : "btn-outline-secondary")" @onclick="() => GoToPage(pageNum)">@pageNum</button>
+        // Hvis der er mere end 2 sider før den aktuelle side, vises en knap til første side
+        <button class="btn btn-sm btn-outline-secondary" @onclick="() => GoToPage(1)">1</button>
+        <span class="mx-1">...</span>
     }
+
+    <!-- foreach loop som itererer over siderne og laver en knap for hver side, den aktuelle side får en anden stil -->
+    @for (int page = Math.Max(1, CurrentPage - 2); page <= Math.Min(TotalPages, CurrentPage + 2); page++)
+    {
+        
+        var pageNum = page;
+        // Knapperne får en anden stil hvis det er den aktuelle side, og onclick eventet sætter den aktuelle side til den side man klikkede på
+        <button class="btn btn-sm @(CurrentPage == pageNum ? "btn-primary" : "btn-outline-secondary")"
+                @onclick="() => GoToPage(pageNum)">
+            @pageNum
+        </button>
+    }
+
+    <!-- Hvis der er mere end 2 sider efter den aktuelle side, vises en knap til sidste side -->
+    @if (CurrentPage < TotalPages - 2)
+    {
+        <span class="mx-1">...</span>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="() => GoToPage(TotalPages)">@TotalPages</button>
+    }
+
+    <!-- Knap til at gå til næste side, deaktiveres hvis man er på sidste side -->
     <button class="btn btn-secondary btn-sm" @onclick="NextPage" disabled="@(CurrentPage == TotalPages)">Næste</button>
     <span class="ms-2 text-muted">Side @CurrentPage af @TotalPages (@filteredLogs.Count logs)</span>
 </div>
 
 @code
 {
+    //Data
+    // loadError bruges til at vise en fejlmeddelelse hvis der opstår en fejl ved at hente logs
     private bool loadError = false;
+
+    // allLogs indeholder alle logs hentet fra API'et
     private List<AuditLogResponseDto> allLogs = new();
 
     //Filtre
@@ -98,9 +132,13 @@
     //Pages
     private int CurrentPage = 1;
     private int PageSize = 20;
+
+    // TotalPages beregnes ud fra antallet af filtrerede logs og størrelsen på hver side
     private int TotalPages => Math.Max(1, (int)Math.Ceiling((double)filteredLogs.Count / PageSize));
+    // pagelogs henter kun de logs der hører til den aktuelle side dvs. side 1: log 1-20, side 2 log 21-40
     private IEnumerable<AuditLogResponseDto> PagesLogs => filteredLogs.Skip((CurrentPage - 1) * PageSize).Take(PageSize);
 
+    //Henter alle logs ved indlæsning af siden
     protected override async Task OnInitializedAsync()
     {
         try
@@ -122,9 +160,12 @@
             
     }
 
+    //
     private void ApplyFilters()
     {
         CurrentPage = 1; // Reset til første side når der søges
+        //Filtrere alllogs og indsætter det i filtered logs. 
+        //Logikken er at hvis noget er null hvis alle, hvis den har en value, hvis kun dem der passer med dem
         filteredLogs = allLogs
         .Where(l => filterFrom == null || l.TimeStamp.Date >= filterFrom.Value.Date)
         .Where(l => filterTo == null || l.TimeStamp.Date <= filterTo.Value.Date)
@@ -134,6 +175,7 @@
         .ToList();
     }
 
+    //Resetter filtre
     private void ResetFilters()
     {
         CurrentPage = 1; // Reset til første side når der søges
@@ -145,6 +187,7 @@
         filteredLogs = allLogs;
     }
 
+    //metode til at ændre currentpage, som er den der vises til brugeren
     private void GoToPage(int page)
     {
         if (page >= 1 && page <= TotalPages)
@@ -153,6 +196,7 @@
         }
     }
 
+    //Metode til at gå en side tilbage vha. currentpage
     private void PreviousPage()
     {
         if (CurrentPage > 1)
@@ -161,6 +205,7 @@
         }
     }
 
+    //Metode til at gå en side frem vha. currentpage
     private void NextPage()
     {
         if(CurrentPage < TotalPages)

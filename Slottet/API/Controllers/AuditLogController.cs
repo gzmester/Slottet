@@ -21,8 +21,11 @@ public class AuditLogController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<AuditLogResponseDto>>> GetAll()
     {
+        //henter alle logs fra databasen sorteret efter faldende dato fra den nyeste
+        // Så nyeste logs vises først
         var logs = await _db.AuditLogs
             .OrderByDescending(log => log.TimeStamp)
+            //mapper entity til DTO
             .Select(log => new AuditLogResponseDto
             {
                 AuditId = log.AuditId,
