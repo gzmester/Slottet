@@ -131,6 +131,8 @@
 
     //Pages
     private int CurrentPage = 1;
+
+    //20 logs pr side
     private int PageSize = 20;
 
     // TotalPages beregnes ud fra antallet af filtrerede logs og størrelsen på hver side
@@ -160,7 +162,7 @@
             
     }
 
-    //
+    
     private void ApplyFilters()
     {
         CurrentPage = 1; // Reset til første side når der søges
