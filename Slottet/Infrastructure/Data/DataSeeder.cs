@@ -152,11 +152,51 @@ public static class DataSeeder
             LastName = "Pedersen",
             Room = "201",
             RiskLevel = RiskLevel.Red,
-            ShoppingDay = " Fredag",
+            ShoppingDay = "Fredag",
             Payment = "Kommunal støtte",
             LocationID = location2.LocationID
         };
-        db.Residents.AddRange(res1, res2, res3);
+        var res4 = new Resident
+        {
+            FirstName = "Marianne",
+            LastName = "Andersen",
+            Room = "103",
+            RiskLevel = RiskLevel.Green,
+            ShoppingDay = "Onsdag",
+            Payment = "Folkepension",
+            LocationID = location1.LocationID
+        };
+        var res5 = new Resident
+        {
+            FirstName = "Erik",
+            LastName = "Larsen",
+            Room = "202",
+            RiskLevel = RiskLevel.Yellow,
+            ShoppingDay = "Tirsdag",
+            Payment = "Privat betaling",
+            LocationID = location2.LocationID
+        };
+        var res6 = new Resident
+        {
+            FirstName = "Gertrud",
+            LastName = "Sørensen",
+            Room = "203",
+            RiskLevel = RiskLevel.Red,
+            ShoppingDay = "Mandag",
+            Payment = "Kommunal støtte",
+            LocationID = location2.LocationID
+        };
+        var res7 = new Resident
+        {
+            FirstName = "Knud",
+            LastName = "Thomsen",
+            Room = "104",
+            RiskLevel = RiskLevel.Green,
+            ShoppingDay = "Lørdag",
+            Payment = "Folkepension",
+            LocationID = location1.LocationID
+        };
+        db.Residents.AddRange(res1, res2, res3, res4, res5, res6, res7);
         await db.SaveChangesAsync();
 
         // --- Medicin ---

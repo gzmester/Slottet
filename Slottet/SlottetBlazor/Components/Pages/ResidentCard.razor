@@ -1,24 +1,26 @@
-﻿<div class="resident-card-container">
+﻿@using Domain.Enums
+@inject IHttpClientFactory HttpClientFactory
+<div class="resident-card-container">
     <table class="resident-header-table">
         <tr>
-            <th class="@GetRiskClass()">Navn</th>
-            <th class="@GetRiskClass()">Værelses Nr.</th>
+            <th class="@GetRiskClass()">@FirstName @LastName</th>
+            <th class="@GetRiskClass()"> Rum @Room</th>
         </tr>
         <tr>
             <td>
                 <select class="dropdown-risk-input @GetRiskClass()" @onchange="OnRiskLevelChange">
-                    <option value="">Risiko</option>
-                    <option value="low">Lav Risiko</option>
-                    <option value="medium">Medium Risiko</option>
-                    <option value="high">Høj Risiko</option>
+                    <option value=""> Risiko </option>
+                    <option value="Green" selected="@(RiskLevel == "Green")">Lav Risiko</option>
+                    <option value="Yellow" selected="@(RiskLevel == "Yellow")">Medium Risiko</option>
+                    <option value="Red" selected="@(RiskLevel == "Red")">Høj Risiko</option>
                 </select>
             </td>
             <td>
                 <select class="dropdown-mood-input">
                     <option value="">Humør </option>
-                    <option value="sad">Trist 🙁</option>
-                    <option value="neutral">Neutral 😑</option>
-                    <option value="happy">Glad 🙂</option>
+                    <option value="sad" ">Trist 🙁</option>
+                    <option value="neutral" ">Neutral 😑</option>
+                    <option value="happy" ">Glad 🙂</option>
                 </select>
             </td>
         </tr>
@@ -55,10 +57,19 @@
         </tr>
         <tr>
             <td>PN-tid</td>
-            <td><textarea class="table-input "></textarea></td>
-            <td><textarea class="table-input "></textarea></td>
-            <td><textarea class="table-input "></textarea></td>
-            <td><textarea class="table-input "></textarea></td>
+
+                <td><textarea class="table-input" rows="1"></textarea>
+                    <input type="time" class="table-input" /></td>
+                
+                <td><textarea class="table-input" rows="1"></textarea>
+                    <input type="time" class="table-input" /></td>
+                
+                <td><textarea class="table-input" rows="1"></textarea>
+                    <input type="time" class="table-input" /></td>
+                
+                <td><textarea class="table-input" rows="1"></textarea>
+                    <input type="time" class="table-input" /></td>
+
         </tr>
     </table>
     
@@ -67,34 +78,100 @@
     <table class="resident-bottom-table">
         <tr>
             <td class="text-nowrap" style="width: 1%;"><strong>HandleDag</strong></td>
-            <td><input type="text" class="table-input" placeholder="eks. Torsdag formiddag, Handler ofte selv"/></td>
+            <td><input type="text" class="table-input" @bind="ShoppingDay" @bind:event="oninput" @onchange="SaveChanges" placeholder="eks. Torsdag formiddag, Handler ofte selv"/></td>
         </tr>
         <tr>
             <td class="text-nowrap" style="width: 1%;"><strong>Betaling</strong></td>
-            <td><input type="text" class="table-input" placeholder="eks. Eget kort, Kontant fra kontor: 400,-"/></td>
+            <td><input type="text" class="table-input" @bind="Payment" @bind:event="oninput" @onchange="SaveChanges" placeholder="eks. Eget kort, Kontant fra kontor: 400,-"/></td>
         </tr>
         <tr>
             <td class="text-nowrap" style="width: 1%;"><strong>Status</strong></td>
-            <td><textarea rows="3" class="table-input"></textarea></td>
+            <td><textarea rows="3" class="table-input" @bind="StatusText" @bind:event="oninput" @onchange="SaveChanges"></textarea></td>
         </tr>
     </table>
 </div>
 
 @code {
-    private string selectedRiskLevel = "";
+    [Parameter]
+    public int ResidentID { get; set; }
+
+    [Parameter]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Parameter]
+    public string LastName { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Room { get; set; } = string.Empty;
+
+    [Parameter]
+    public string RiskLevel { get; set; } = string.Empty;
+
+    [Parameter]
+    public string ShoppingDay { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Payment { get; set; } = string.Empty;
+
+    [Parameter]
+    public List<string> Medicins { get; set; } = new();
+
+    [Parameter]
+    public List<string> PNMedicins { get; set; } = new();
+
+    [Parameter]
+    public List<string> Statuses { get; set; } = new();
+
+    private string StatusText = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        // Combine all status descriptions with line breaks
+        StatusText = string.Join("\n", Statuses);
+    }
+
+    private async Task SaveChanges()
+    {
+        try
+        {
+            var http = HttpClientFactory.CreateClient("API");
+
+            var updateRequest = new
+            {
+                ResidentID,
+                FirstName,
+                LastName,
+                Room,
+                RiskLevel,
+                ShoppingDay,
+                Payment,
+                Status = StatusText
+            };
+
+            var response = await http.PutAsJsonAsync($"api/resident/{ResidentID}", updateRequest);
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex}");
+        }
+    }
 
     private void OnRiskLevelChange(ChangeEventArgs e)
     {
-        selectedRiskLevel = e.Value?.ToString() ?? "";
+        RiskLevel = e.Value?.ToString() ?? "";
+        _ = SaveChanges();
     }
 
+
+    //Metode som sætter css-klassen for at farve efter Risk nieveau Grøn/Gul/Rød 
     private string GetRiskClass()
     {
-        return selectedRiskLevel switch
+        return RiskLevel switch
         {
-            "low" => "risk-low",
-            "medium" => "risk-medium",
-            "high" => "risk-high",
+            "Green" => "risk-low",
+            "Yellow" => "risk-medium",
+            "Red" => "risk-high",
             _ => ""
         };
     }

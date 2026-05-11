@@ -130,31 +130,42 @@
 
     protected override async Task OnInitializedAsync()
     {
-        LocationsList = new List<Location>
+        try
         {
-            new Location
+            LocationsList = new List<Location>
             {
-                LocationID = 1,
-                Name = "Afdeling A",
-                Address = "Slotsvej 1",
-                ZipCode = 8000,
-                Residents = new List<Resident>
+                new Location
                 {
-                    new Resident { ResidentID = 1, FirstName = "Lars", LastName = "Andersen", Room = "101" },
-                    new Resident { ResidentID = 2, FirstName = "Mette", LastName = "Hansen", Room = "102" },
-                }
-            },
-            new Location
-            {
-                LocationID = 2,
-                Name = "Afdeling B",
-                Address = "Slotsvej 2",
-                ZipCode = 8000,
-                Residents = new List<Resident>
+                    LocationID = 1,
+                    Name = "Afdeling A",
+                    Address = "Slotsvej 1",
+                    ZipCode = 8000,
+                    Residents = new List<Resident>
+                    {
+                        new Resident { ResidentID = 1, FirstName = "Lars", LastName = "Andersen", Room = "101" },
+                        new Resident { ResidentID = 2, FirstName = "Mette", LastName = "Hansen", Room = "102" },
+                    }
+                },
+                new Location
                 {
-                    new Resident { ResidentID = 3, FirstName = "Jens", LastName = "Christensen", Room = "201" }
+                    LocationID = 2,
+                    Name = "Afdeling B",
+                    Address = "Slotsvej 2",
+                    ZipCode = 8000,
+                    Residents = new List<Resident>
+                    {
+                        new Resident { ResidentID = 3, FirstName = "Jens", LastName = "Christensen", Room = "201" }
+                    }
                 }
-            }
-        };
+            };
+        }
+        catch (HttpRequestException ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+
     }
 }
+
+
+

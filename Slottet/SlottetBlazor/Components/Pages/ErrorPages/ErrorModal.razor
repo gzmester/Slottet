@@ -1,0 +1,18 @@
+﻿@if (IsVisible)
+{
+    <div class="modal-backdrop">
+        <div class="error-popup">
+            <h3>Tilslutning Mislykkedes</h3>
+            <p><strong>@ErrorMessage</strong></p>
+            <button @onclick="Close">Tilbage</button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private async Task Close() => await OnClose.InvokeAsync();
+}
