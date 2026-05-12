@@ -57,6 +57,10 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
         {
             entity.ToTable("Authorization");
             entity.HasKey(e => e.AuthorizationID);
+            entity.Property(e => e.Role)
+                  .HasConversion<string>()
+                  .HasMaxLength(20)
+                  .IsRequired();
         });
 
         // Role
