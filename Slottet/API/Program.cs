@@ -14,7 +14,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
 /// ========================= Authentication & Identity Middleware Setup =========================
 // 1. Add Identity Services
@@ -73,11 +76,7 @@ using (var scope = app.Services.CreateScope())
         logger.LogInformation("Applying database migrations...");
         await db.Database.MigrateAsync();
 
-        // Seed only in Development
-        if (app.Environment.IsDevelopment())
-        {
-            await DataSeeder.SeedAsync(db, logger);
-        }
+
     }
     catch (Exception ex)
     {

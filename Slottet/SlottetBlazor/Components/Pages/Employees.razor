@@ -3,6 +3,7 @@
 @using Application.DTOs.Employee
 @using Application.DTOs.Location
 @using Application.DTOs.Authorization
+@using Domain.Enums
 @inject IHttpClientFactory HttpClientFactory
 
 @*Overskrift med ikon*@
@@ -93,7 +94,7 @@
                             <option value="0">Vælg autorisation</option>
                             @foreach (var auth in authorizations)
                             {
-                                <option value="@auth.AuthorizationID">@(auth.Admin ? "Admin" : auth.Scheduler ? "Planlægger" : auth.Employee ? "Medarbejder" : "Vikar")</option>
+                                <option value="@auth.AuthorizationID">@RoleDisplayName(auth.Role)</option>
                             }
                         </select>
                     </div>
@@ -237,4 +238,13 @@
     {
         showModal = false;
     }
+
+    private static string RoleDisplayName(AuthorizationRole role) => role switch
+    {
+        AuthorizationRole.CareStaff => "Plejepersonale",
+        AuthorizationRole.Scheduler => "Planlægger",
+        AuthorizationRole.Admin     => "Admin",
+        AuthorizationRole.Substitut => "Substitut",
+        _                           => role.ToString()
+    };
 }
