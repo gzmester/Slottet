@@ -86,7 +86,7 @@
         </tr>
         <tr>
             <td class="text-nowrap" style="width: 1%;"><strong>Status</strong></td>
-            <td><textarea rows="3" class="table-input" @bind="StatusText" @bind:event="oninput" @onchange="SaveChanges"></textarea></td>
+            <td><textarea rows="3" class="table-input" @bind="Status" @bind:event="oninput" @onchange="SaveChanges"></textarea></td>
         </tr>
     </table>
 </div>
@@ -122,13 +122,8 @@
     [Parameter]
     public List<string> Statuses { get; set; } = new();
 
-    private string StatusText = string.Empty;
+    private string Status = string.Empty;
 
-    protected override void OnParametersSet()
-    {
-        // Combine all status descriptions with line breaks
-        StatusText = string.Join("\n", Statuses);
-    }
 
     private async Task SaveChanges()
     {
@@ -145,7 +140,7 @@
                 RiskLevel,
                 ShoppingDay,
                 Payment,
-                Status = StatusText
+                Status
             };
 
             var response = await http.PutAsJsonAsync($"api/resident/{ResidentID}", updateRequest);
