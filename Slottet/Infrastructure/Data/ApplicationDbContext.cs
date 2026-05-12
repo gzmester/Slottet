@@ -46,6 +46,10 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
             entity.Property(e => e.RiskLevel)
                   .HasConversion<string>()
                   .HasMaxLength(20);
+            entity.Property(e => e.Mood)
+                  .HasConversion<string>()
+                  .HasMaxLength(10)
+                  .HasDefaultValue(Domain.Enums.Mood.Neutral);
             entity.Property(e => e.ShoppingDay).HasMaxLength(400);
             entity.HasOne(e => e.Location)
                   .WithMany(l => l.Residents)

@@ -4,7 +4,9 @@
 @using Application.DTOs.Location
 @using Application.DTOs.Authorization
 @using Domain.Enums
+@using System.Text.Json
 @inject IHttpClientFactory HttpClientFactory
+@inject JsonSerializerOptions JsonOptions
 
 @*Overskrift med ikon*@
 <h1>
@@ -147,9 +149,9 @@
         {
             var http = HttpClientFactory.CreateClient("API");
 
-            var empTask  = http.GetFromJsonAsync<List<EmployeeResponseDto>>("api/employees");
-            var locTask  = http.GetFromJsonAsync<List<LocationResponseDto>>("api/locations");
-            var authTask = http.GetFromJsonAsync<List<AuthorizationResponseDto>>("api/authorizations");
+            var empTask  = http.GetFromJsonAsync<List<EmployeeResponseDto>>("api/employees", JsonOptions);
+            var locTask  = http.GetFromJsonAsync<List<LocationResponseDto>>("api/locations", JsonOptions);
+            var authTask = http.GetFromJsonAsync<List<AuthorizationResponseDto>>("api/authorizations", JsonOptions);
 
             await Task.WhenAll(empTask, locTask, authTask);
 
@@ -244,7 +246,7 @@
         AuthorizationRole.CareStaff => "Plejepersonale",
         AuthorizationRole.Scheduler => "Planlægger",
         AuthorizationRole.Admin     => "Admin",
-        AuthorizationRole.Substitut => "Substitut",
+        AuthorizationRole.Substitute => "Substitut",
         _                           => role.ToString()
     };
 }

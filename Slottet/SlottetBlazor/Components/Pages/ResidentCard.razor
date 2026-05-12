@@ -1,4 +1,4 @@
-﻿@using Domain.Enums
+﻿@using Application.DTOs.Resident
 @inject IHttpClientFactory HttpClientFactory
 <div class="resident-card-container">
     <table class="resident-header-table">
@@ -16,11 +16,11 @@
                 </select>
             </td>
             <td>
-                <select class="dropdown-mood-input">
+                <select class="dropdown-mood-input" value="@Mood" @onchange="OnMoodChange">
                     <option value="">Humør </option>
-                    <option value="sad" ">Trist 🙁</option>
-                    <option value="neutral" ">Neutral 😑</option>
-                    <option value="happy" ">Glad 🙂</option>
+                    <option value="Sad">Trist 🙁</option>
+                    <option value="Neutral">Neutral 😑</option>
+                    <option value="Happy">Glad 🙂</option>
                 </select>
             </td>
         </tr>
@@ -30,30 +30,16 @@
     <table class="resident-middle-table">
         <tr>
             <td>Medicin</td>
-            <td>
-                <div class="flex-container">
-                 <input type="time" class="table-input " /> 
-                 <input type="checkbox" class="checkbox-input " />
-                </div>
-            </td>
-            <td>
-                <div class="flex-container">
-                 <input type="time" class="table-input " /> 
-                 <input type="checkbox" class="checkbox-input" />
-                </div>
-            </td>
-            <td>
-                <div class="flex-container">
-                 <input type="time" class="table-input" /> 
-                 <input type="checkbox" class="checkbox-input" />
-                </div>
-            </td>
-            <td>
-                <div class="flex-container">
-                 <input type="time" class="table-input" /> 
-                 <input type="checkbox" class="checkbox-input" />
-                </div>
-            </td>
+            @foreach (var med in Medicins)
+            {
+                <td>
+                    <div class="flex-container">
+                        <small>@med.Type</small>
+                        <input type="time" class="table-input" value="@FormatTime(med.Time)" readonly />
+                        <input type="checkbox" class="checkbox-input" checked="@med.IsTaken" @onchange="() => ToggleIsTakenAsync(med)" />
+                    </div>
+                </td>
+            }
         </tr>
         <tr>
             <td>PN-tid</td>
@@ -86,10 +72,47 @@
         </tr>
         <tr>
             <td class="text-nowrap" style="width: 1%;"><strong>Status</strong></td>
-            <td><textarea rows="3" class="table-input" @bind="Status" @bind:event="oninput" @onchange="SaveChanges"></textarea></td>
+            <td>
+                @foreach (var s in _displayStatuses.Take(2))
+                {
+                    <div class="status-entry"><span class="text-muted small">@s.Time.ToString("HH:mm")</span> @s.Description</div>
+                }
+                @if (_displayStatuses.Count > 2)
+                {
+                    <button class="btn btn-link btn-sm p-0" @onclick="() => _showStatusModal = true">Se alle (@_displayStatuses.Count)</button>
+                }
+                <textarea rows="2" maxlength="200" class="table-input" @bind="Status" @bind:event="oninput" @onchange="SaveChanges" placeholder="Tilføj status... (max 200 tegn)"></textarea>
+            </td>
         </tr>
     </table>
 </div>
+
+@if (_showStatusModal)
+{
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Statuser idag — @FirstName @LastName</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showStatusModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    @foreach (var s in _displayStatuses)
+                    {
+                        <div class="mb-2">
+                            <span class="badge bg-secondary">@s.Time.ToString("HH:mm")</span>
+                            <span class="ms-2">@s.Description</span>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => _showStatusModal = false">Luk</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
 
 @code {
     [Parameter]
@@ -108,22 +131,31 @@
     public string RiskLevel { get; set; } = string.Empty;
 
     [Parameter]
+    public string Mood { get; set; } = "Neutral";
+
+    [Parameter]
     public string ShoppingDay { get; set; } = string.Empty;
 
     [Parameter]
     public string Payment { get; set; } = string.Empty;
 
     [Parameter]
-    public List<string> Medicins { get; set; } = new();
+    public List<MedicinDto> Medicins { get; set; } = new();
 
     [Parameter]
     public List<string> PNMedicins { get; set; } = new();
 
     [Parameter]
-    public List<string> Statuses { get; set; } = new();
+    public List<StatusDto> Statuses { get; set; } = new();
 
     private string Status = string.Empty;
+    private List<StatusDto> _displayStatuses = new();
+    private bool _showStatusModal = false;
 
+    protected override void OnParametersSet()
+    {
+        _displayStatuses = Statuses.ToList();
+    }
 
     private async Task SaveChanges()
     {
@@ -138,18 +170,32 @@
                 LastName,
                 Room,
                 RiskLevel,
+                Mood,
                 ShoppingDay,
                 Payment,
-                Status
+                Status = Status
             };
 
             var response = await http.PutAsJsonAsync($"api/resident/{ResidentID}", updateRequest);
 
+            if (response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(Status))
+            {
+                _displayStatuses.Insert(0, new StatusDto { Description = Status, Time = DateTime.Now });
+                Status = string.Empty;
+                StateHasChanged();
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error: {ex}");
         }
+    }
+
+    private async Task ToggleIsTakenAsync(MedicinDto med)
+    {
+        med.IsTaken = !med.IsTaken;
+        var http = HttpClientFactory.CreateClient("API");
+        await http.PatchAsync($"api/medicin/{med.MedicinID}/taken?isTaken={med.IsTaken}", null);
     }
 
     private void OnRiskLevelChange(ChangeEventArgs e)
@@ -158,16 +204,19 @@
         _ = SaveChanges();
     }
 
-
-    //Metode som sætter css-klassen for at farve efter Risk nieveau Grøn/Gul/Rød 
-    private string GetRiskClass()
+    private void OnMoodChange(ChangeEventArgs e)
     {
-        return RiskLevel switch
-        {
-            "Green" => "risk-low",
-            "Yellow" => "risk-medium",
-            "Red" => "risk-high",
-            _ => ""
-        };
+        Mood = e.Value?.ToString() ?? "Neutral";
+        _ = SaveChanges();
     }
+
+    private static string FormatTime(DateTime dt) => dt.ToString("HH:mm");
+
+    private string GetRiskClass() => RiskLevel switch
+    {
+        "Green"  => "risk-low",
+        "Yellow" => "risk-medium",
+        "Red"    => "risk-high",
+        _        => ""
+    };
 }

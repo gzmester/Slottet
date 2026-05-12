@@ -5,6 +5,14 @@
     box-shadow: 0 2px 4px rgba(20, 20, 20, 0.5);
 }
 
+.status-entry {
+    font-size: 13px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    padding: 1px 0;
+    border-bottom: 1px solid #eee;
+}
+
 .flex-container {
     display: flex;
     align-items: center;

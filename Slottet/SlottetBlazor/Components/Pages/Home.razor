@@ -3,7 +3,9 @@
 @using Application.DTOs.Resident
 @using Application.DTOs.Location
 @using Application.DTOs.Authorization
+@using System.Text.Json
 @inject IHttpClientFactory HttpClientFactory
+@inject JsonSerializerOptions JsonOptions
 
 <PageTitle>Home</PageTitle>
 
@@ -18,6 +20,7 @@
                 LastName="@resident.LastName"
                 Room="@resident.Room"
                 RiskLevel="@resident.RiskLevel"
+                Mood="@resident.Mood"
                 ShoppingDay="@resident.ShoppingDay"
                 Payment="@resident.Payment"
                 Medicins="@resident.Medicins"
@@ -49,9 +52,9 @@
         {
             var http = HttpClientFactory.CreateClient("API");
 
-            var resTask  = http.GetFromJsonAsync<List<ResidentResponseDto>>("api/resident");
-            var locTask  = http.GetFromJsonAsync<List<LocationResponseDto>>("api/locations");
-            var authTask = http.GetFromJsonAsync<List<AuthorizationResponseDto>>("api/authorizations");
+            var resTask  = http.GetFromJsonAsync<List<ResidentResponseDto>>("api/resident", JsonOptions);
+            var locTask  = http.GetFromJsonAsync<List<LocationResponseDto>>("api/locations", JsonOptions);
+            var authTask = http.GetFromJsonAsync<List<AuthorizationResponseDto>>("api/authorizations", JsonOptions);
 
             await Task.WhenAll(resTask, locTask, authTask);
 
@@ -59,7 +62,7 @@
             if (locTask.Result  is not null) locations      = locTask.Result;
             if (authTask.Result is not null) authorizations = authTask.Result;
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
         }

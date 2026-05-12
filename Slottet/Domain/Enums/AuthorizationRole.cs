@@ -5,5 +5,5 @@ public enum AuthorizationRole
     CareStaff,
     Scheduler,
     Admin,
-    Substitut
+    Substitute
 }

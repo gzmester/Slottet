@@ -76,6 +76,12 @@ namespace API.Controllers
                 resident.RiskLevel = riskLevel;
             }
 
+            // Parse Mood enum
+            if (Enum.TryParse<Mood>(updateDto.Mood, out var mood))
+            {
+                resident.Mood = mood;
+            }
+
             // Handle Status update - create a new status entry if provided
             if (!string.IsNullOrWhiteSpace(updateDto.Status))
             {
@@ -110,13 +116,23 @@ namespace API.Controllers
             LastName = resident.LastName,
             Room = resident.Room,
             RiskLevel = resident.RiskLevel.ToString(),
+            Mood = resident.Mood.ToString(),
             ShoppingDay = resident.ShoppingDay,
             Payment = resident.Payment,
             LocationID = resident.LocationID,
             Location = resident.Location.Name,
-            //Medicins = resident.Medicins.Select(m => m.Name).ToList(),
-            //PNMedicins = resident.PNMedicins.Select(m => m.Name).ToList(),
-            Statuses = resident.Statuses.Select(s => s.Description).ToList()
+            Medicins = resident.Medicins.Select(m => new MedicinDto
+            {
+                MedicinID = m.MedicinID,
+                Type      = m.Type,
+                Time      = m.Time,
+                IsTaken   = m.IsTaken
+            }).ToList(),
+            Statuses = resident.Statuses
+                .Where(s => s.Time.Date == DateTime.Today)
+                .OrderByDescending(s => s.Time)
+                .Select(s => new StatusDto { Description = s.Description, Time = s.Time })
+                .ToList()
             
         };
         
