@@ -60,7 +60,7 @@ public class PhoneNumberController : ControllerBase
         await _db.AuditLogs.AddAsync(new AuditLog
         {
             LogType = "Activity",
-            Action = "CreatedPhoneNumber",
+            Action = "Telefonnummer oprettet",
             Entity = "PhoneNumber",
             EntityId = phoneNumber.Id.ToString(),
             UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
@@ -87,7 +87,7 @@ public class PhoneNumberController : ControllerBase
         await _db.AuditLogs.AddAsync(new AuditLog
         {
             LogType = "Activity",
-            Action = "UpdatedPhoneNumber",
+            Action = "Telefonnummer opdateret",
             Entity = "PhoneNumber",
             EntityId = phoneNumber.Id.ToString(),
             UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
@@ -113,7 +113,7 @@ public class PhoneNumberController : ControllerBase
         await _db.AuditLogs.AddAsync(new AuditLog
         {
             LogType = "Activity",
-            Action = "AssignedEmployeeToPhoneNumber",
+            Action = "Tilkoblet medarbejder til telefonnummer",
             Entity = "PhoneNumber",
             EntityId = phoneNumber.Id.ToString(),
             UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
@@ -139,7 +139,7 @@ public class PhoneNumberController : ControllerBase
         await _db.AuditLogs.AddAsync(new AuditLog
         {
             LogType = "Activity",
-            Action = "DeletedPhoneNumber",
+            Action = "Telefonnummer slettet",
             Entity = "PhoneNumber",
             EntityId = phoneNumber.Id.ToString(),
             UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),

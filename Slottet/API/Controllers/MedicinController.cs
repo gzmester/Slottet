@@ -26,6 +26,20 @@ public class MedicinController : ControllerBase
         medicin.IsTaken = isTaken;
         await _db.SaveChangesAsync();
 
+        //Log medicin taget
+        await _db.AuditLogs.AddAsync(new AuditLog
+        {
+            LogType  = "Activity",
+            Action   = isTaken ? "Medicin taget" : "Medicin fortrudt",
+            Entity   = "Medicin",
+            EntityId = id.ToString(),
+            UserId   = null,
+            UserName = "unknown"
+        });
+        await _db.SaveChangesAsync();
+
         return NoContent();
+
+        
     }
 }

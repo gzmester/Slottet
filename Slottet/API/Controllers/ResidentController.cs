@@ -56,12 +56,16 @@ namespace API.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<ResidentResponseDto>> Update(int id, UpdateResidentRequestDto updateDto)
         {
+            
             var resident = await _db.Residents
                 .Include(r => r.Statuses)
                 .FirstOrDefaultAsync(r => r.ResidentID == id);
 
             if (resident == null)
                 return NotFound($"Resident with ID {id} not found");
+
+            var oldRiskLevel = resident.RiskLevel;
+            var oldMood = resident.Mood;
 
             // Update fields
             resident.FirstName = updateDto.FirstName;
@@ -95,6 +99,34 @@ namespace API.Controllers
             }
 
             _db.Residents.Update(resident);
+            await _db.SaveChangesAsync();
+
+            if( oldRiskLevel != resident.RiskLevel)
+            {
+                await _db.AuditLogs.AddAsync(new AuditLog
+                {
+                    LogType  = "Activity",
+                    Action   = "Risikoniveau opdateret",
+                    Entity   = "Resident",
+                    EntityId = id.ToString(),
+                    UserId   = null,
+                    UserName = "unknown"
+                });
+            }
+
+            if(oldMood != resident.Mood)
+            {
+                await _db.AuditLogs.AddAsync(new AuditLog
+                {
+                    LogType  = "Activity",
+                    Action   = "Humør opdateret",
+                    Entity   = "Resident",
+                    EntityId = id.ToString(),
+                    UserId   = null,
+                    UserName = "unknown"
+                });
+            }
+
             await _db.SaveChangesAsync();
 
             // Reload to get updated relationships
