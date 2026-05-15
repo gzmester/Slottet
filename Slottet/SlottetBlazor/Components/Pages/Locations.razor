@@ -1,6 +1,8 @@
-﻿@page "/Locations"
-@using Domain.Enums
+@page "/Locations"
 @rendermode InteractiveServer
+@using Application.DTOs.Location
+@using Application.DTOs.Resident
+@inject IHttpClientFactory HttpClientFactory
 
 <h1 class="mb-4">
     <i class="bi bi-geo-alt me-2" style="font-size: 32px;"></i>
@@ -13,22 +15,19 @@
     <div class="col-md-4">
 
         <div class="list-group">
-
-            @foreach (var location in LocationsList)
+            @foreach (var location in locations)
             {
                 <button class="list-group-item list-group-item-action
-                                   @(SelectedLocation?.LocationID == location.LocationID ? "active" : "")"
-                        @onclick="() => SelectLocation(location)">
-
+                               @(selectedLocationId == location.LocationID ? "active" : "")"
+                        @onclick="() => SelectLocation(location.LocationID)">
                     <strong>@location.Name</strong><br />
                     <small>@location.Address</small>
                 </button>
             }
-
         </div>
 
         <button class="btn btn-outline-secondary mt-3 w-100"
-                @onclick="AddLocationAsync">
+                @onclick="OpenAddModal">
             + Ny lokation
         </button>
 
@@ -40,59 +39,66 @@
         @if (SelectedLocation != null)
         {
             <div class="card shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <h4 class="mb-1">@SelectedLocation.Name</h4>
-                    <p class="text-muted mb-0">
-                        <i class="bi bi-geo-alt-fill me-1"></i>
-                        @SelectedLocation.Address, @SelectedLocation.ZipCode
-                    </p>
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-start">
+                    <div>
+                        <h4 class="mb-1">@SelectedLocation.Name</h4>
+                        <p class="text-muted mb-0">
+                            <i class="bi bi-geo-alt-fill me-1"></i>
+                            @SelectedLocation.Address, @SelectedLocation.ZipCode
+                        </p>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger"
+                            @onclick="() => DeleteLocationAsync(SelectedLocation.LocationID)">
+                        <i class="bi bi-trash me-1"></i> Slet
+                    </button>
                 </div>
 
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Navn</th>
-                                    <th style="width: 120px;">Værelse</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var resident in SelectedLocation.Residents)
-                                {
+                    <h6 class="text-muted mb-3">Beboere</h6>
+                    @{
+                        var locationResidents = residents
+                            .Where(r => r.LocationID == SelectedLocation.LocationID)
+                            .ToList();
+                    }
+                    @if (locationResidents.Count == 0)
+                    {
+                        <p class="text-muted fst-italic">Ingen beboere tilknyttet denne lokation.</p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
                                     <tr>
-                                        <td style="width: 70%;">
-                                            <div class="d-flex gap-2">
-                                                <input class="form-control form-control-sm"
-                                                       @bind="resident.FirstName" placeholder="Fornavn" />
-                                                <input class="form-control form-control-sm"
-                                                       @bind="resident.LastName" placeholder="Efternavn" />
-                                            </div>
-                                        </td>
-                                        <td style="width: 30%;">
-                                            <input class="form-control form-control-sm text-center"
-                                                   @bind="resident.Room" />
-                                        </td>
+                                        <th>Navn</th>
+                                        <th>Værelse</th>
+                                        <th>Risikoniveau</th>
                                     </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="card-footer bg-light d-flex justify-content-between align-items-center">
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="AddResidentAsync">
-                        <i class="bi bi-plus-circle me-1"></i> Tilføj beboer
-                    </button>
-                    <button class="btn btn-primary" @onclick="SaveChangesAsync">
-                        <i class="bi bi-check-lg me-1"></i> Gem ændringer
-                    </button>
+                                </thead>
+                                <tbody>
+                                    @foreach (var resident in locationResidents)
+                                    {
+                                        <tr>
+                                            <td>@resident.FirstName @resident.LastName</td>
+                                            <td>@resident.Room</td>
+                                            <td>
+                                                <span class="badge @GetRiskBadgeClass(resident.RiskLevel)">
+                                                    @resident.RiskLevel
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
                 </div>
             </div>
         }
         else
         {
-            <div class="card bg-light border-dashed d-flex align-items-center justify-content-center" style="height: 200px; border: 2px dashed #dee2e6;">
+            <div class="card bg-light d-flex align-items-center justify-content-center"
+                 style="height: 200px; border: 2px dashed #dee2e6;">
                 <p class="text-muted mb-0">Vælg en lokation til venstre for at se detaljer</p>
             </div>
         }
@@ -101,34 +107,81 @@
 
 </div>
 
-
+@if (showModal)
+{
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ny lokation</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Navn</label>
+                        <input type="text" maxlength="50" class="form-control" @bind="newName" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Adresse</label>
+                        <input type="text" maxlength="50" class="form-control" @bind="newAddress" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Postnummer</label>
+                        <input type="number" class="form-control" @bind="newZipCode" />
+                    </div>
+                    @if (saveError is not null)
+                    {
+                        <div class="alert alert-danger">@saveError</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Luk</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveLocationAsync">Gem</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
 
 @code {
-    private List<Location> LocationsList = new();
+    private List<LocationResponseDto> locations = new();
+    private List<ResidentResponseDto> residents = new();
     private int? selectedLocationId;
 
-    private Location? SelectedLocation =>
-        LocationsList.FirstOrDefault(l => l.LocationID == selectedLocationId);
+    private bool showModal = false;
+    private string newName = string.Empty;
+    private string newAddress = string.Empty;
+    private int newZipCode;
+    private string? saveError;
 
-    private void SelectLocation(Location location)
-    {
-        selectedLocationId = location.LocationID;
-        StateHasChanged();
-    }
-
-    private string GetRiskClass(RiskLevel level) => level switch
-    {
-        RiskLevel.Green => "badge-risk-low",
-        RiskLevel.Yellow => "badge-risk-mid",
-        RiskLevel.Red => "badge-risk-high",
-        _ => "bg-secondary"
-    };
-
-    private async Task AddLocationAsync() { }
-    private async Task AddResidentAsync() { }
-    private async Task SaveChangesAsync() { }
+    private LocationResponseDto? SelectedLocation =>
+        locations.FirstOrDefault(l => l.LocationID == selectedLocationId);
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        var http = HttpClientFactory.CreateClient("API");
+
+        var locTask = http.GetFromJsonAsync<List<LocationResponseDto>>("api/locations");
+        var resTask = http.GetFromJsonAsync<List<ResidentResponseDto>>("api/Resident");
+
+        await Task.WhenAll(locTask, resTask);
+
+        if (locTask.Result is not null) locations = locTask.Result;
+        if (resTask.Result is not null) residents = resTask.Result;
+    }
+
+    private void SelectLocation(int locationId)
+    {
+        selectedLocationId = locationId;
+    }
+
+    private void OpenAddModal()
     {
         try
         {
