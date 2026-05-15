@@ -92,7 +92,7 @@ public class EmployeesController : ControllerBase
         await _db.AuditLogs.AddAsync(new AuditLog
         {
             LogType = "Activity",
-            Action = "CreatedEmployee",
+            Action = "Medarbejder oprettet",
             Entity = "Employee",
             EntityId = employee.Id.ToString(),
             UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
@@ -141,7 +141,7 @@ public class EmployeesController : ControllerBase
         await _db.AuditLogs.AddAsync(new AuditLog
         {
             LogType = "Activity",
-            Action = "UpdatedEmployee",
+            Action = "Medarbejder opdateret",
             Entity = "Employee",
             EntityId = employee.Id.ToString(),
             UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
@@ -168,7 +168,7 @@ public class EmployeesController : ControllerBase
         await _db.AuditLogs.AddAsync(new AuditLog
         {
             LogType = "Activity",
-            Action = "DeletedEmployee",
+            Action = "Medarbejder slettet",
             Entity = "Employee",
             EntityId = employee.Id.ToString(),
             UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),

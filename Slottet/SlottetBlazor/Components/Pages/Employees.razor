@@ -3,7 +3,10 @@
 @using Application.DTOs.Employee
 @using Application.DTOs.Location
 @using Application.DTOs.Authorization
+@using Domain.Enums
+@using System.Text.Json
 @inject IHttpClientFactory HttpClientFactory
+@inject JsonSerializerOptions JsonOptions
 
 @*Overskrift med ikon*@
 <h1>
@@ -93,7 +96,7 @@
                             <option value="0">Vælg autorisation</option>
                             @foreach (var auth in authorizations)
                             {
-                                <option value="@auth.AuthorizationID">@(auth.Admin ? "Admin" : auth.Scheduler ? "Planlægger" : auth.Employee ? "Medarbejder" : "Vikar")</option>
+                                <option value="@auth.AuthorizationID">@RoleDisplayName(auth.Role)</option>
                             }
                         </select>
                     </div>
@@ -142,17 +145,25 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var http = HttpClientFactory.CreateClient("API");
+        try
+        {
+            var http = HttpClientFactory.CreateClient("API");
 
-        var empTask  = http.GetFromJsonAsync<List<EmployeeResponseDto>>("api/employees");
-        var locTask  = http.GetFromJsonAsync<List<LocationResponseDto>>("api/locations");
-        var authTask = http.GetFromJsonAsync<List<AuthorizationResponseDto>>("api/authorizations");
+            var empTask  = http.GetFromJsonAsync<List<EmployeeResponseDto>>("api/employees", JsonOptions);
+            var locTask  = http.GetFromJsonAsync<List<LocationResponseDto>>("api/locations", JsonOptions);
+            var authTask = http.GetFromJsonAsync<List<AuthorizationResponseDto>>("api/authorizations", JsonOptions);
 
-        await Task.WhenAll(empTask, locTask, authTask);
+            await Task.WhenAll(empTask, locTask, authTask);
 
-        if (empTask.Result  is not null) employees      = empTask.Result;
-        if (locTask.Result  is not null) locations      = locTask.Result;
-        if (authTask.Result is not null) authorizations = authTask.Result;
+            if (empTask.Result  is not null) employees      = empTask.Result;
+            if (locTask.Result  is not null) locations      = locTask.Result;
+            if (authTask.Result is not null) authorizations = authTask.Result;
+        }
+        catch (HttpRequestException ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+
     }
 
     private void AddEmployeeAsync()
@@ -229,4 +240,13 @@
     {
         showModal = false;
     }
+
+    private static string RoleDisplayName(AuthorizationRole role) => role switch
+    {
+        AuthorizationRole.CareStaff => "Plejepersonale",
+        AuthorizationRole.Scheduler => "Planlægger",
+        AuthorizationRole.Admin     => "Admin",
+        AuthorizationRole.Substitute => "Substitut",
+        _                           => role.ToString()
+    };
 }

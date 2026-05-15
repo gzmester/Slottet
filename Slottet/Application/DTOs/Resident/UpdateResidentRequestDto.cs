@@ -1,8 +1,6 @@
-using System;
-
 namespace Application.DTOs.Resident;
 
-public class ResidentResponseDto
+public class UpdateResidentRequestDto
 {
     public int ResidentID { get; set; }
     public string FirstName { get; set; } = string.Empty;
@@ -12,11 +10,5 @@ public class ResidentResponseDto
     public string Mood { get; set; } = "Neutral";
     public string ShoppingDay { get; set; } = string.Empty;
     public string Payment { get; set; } = string.Empty;
-
-    public int LocationID { get; set; }
-    public string Location { get; set; } = string.Empty;
-
-    public List<MedicinDto> Medicins { get; set; } = new();
-    public List<string> PNMedicins { get; set; } = new();
-    public List<StatusDto> Statuses { get; set; } = new();
+    public string Status { get; set; } = string.Empty;
 }

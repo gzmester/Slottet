@@ -1,13 +1,9 @@
-namespace Domain.Entities;
+namespace Application.DTOs.Resident;
 
-public class Medicin
+public class MedicinDto
 {
     public int MedicinID { get; set; }
     public string Type { get; set; } = string.Empty;
     public DateTime Time { get; set; }
     public bool IsTaken { get; set; }
-
-    // FK
-    public int ResidentID { get; set; }
-    public Resident Resident { get; set; } = null!;
 }

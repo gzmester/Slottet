@@ -1,13 +1,31 @@
 ﻿@page "/"
 @rendermode InteractiveServer
+@using Application.DTOs.Resident
+@using Application.DTOs.Location
+@using Application.DTOs.Authorization
+@using System.Text.Json
+@inject IHttpClientFactory HttpClientFactory
+@inject JsonSerializerOptions JsonOptions
 
 <PageTitle>Home</PageTitle>
 
 <div class="residents-container">
     <div class="residents-grid">
-        @for (int i = 0; i < ResidentsPerPage && (CurrentPage - 1) * ResidentsPerPage + i < TotalResidents; i++)
+        @for (int i = 0; i < ResidentsPerPage && (CurrentPage - 1) * ResidentsPerPage + i < employees.Count; i++)
         {
-            <ResidentCard/>
+            var resident = employees[(CurrentPage - 1) * ResidentsPerPage + i];
+            <ResidentCard 
+                ResidentID="@resident.ResidentID"
+                FirstName="@resident.FirstName"
+                LastName="@resident.LastName"
+                Room="@resident.Room"
+                RiskLevel="@resident.RiskLevel"
+                Mood="@resident.Mood"
+                ShoppingDay="@resident.ShoppingDay"
+                Payment="@resident.Payment"
+                Medicins="@resident.Medicins"
+                PNMedicins="@resident.PNMedicins"
+                Statuses="@resident.Statuses" />
         }
     </div>
 
@@ -24,11 +42,40 @@
 </div>
 
 @code {
+    private List<ResidentResponseDto> employees = new();
+    private List<LocationResponseDto> locations = new();
+    private List<AuthorizationResponseDto> authorizations = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var http = HttpClientFactory.CreateClient("API");
+
+            var resTask  = http.GetFromJsonAsync<List<ResidentResponseDto>>("api/resident", JsonOptions);
+            var locTask  = http.GetFromJsonAsync<List<LocationResponseDto>>("api/locations", JsonOptions);
+            var authTask = http.GetFromJsonAsync<List<AuthorizationResponseDto>>("api/authorizations", JsonOptions);
+
+            await Task.WhenAll(resTask, locTask, authTask);
+
+            if (resTask.Result  is not null) employees      = resTask.Result;
+            if (locTask.Result  is not null) locations      = locTask.Result;
+            if (authTask.Result is not null) authorizations = authTask.Result;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+    }
+}
+
+
+@code {
     private int CurrentPage = 1;
     private int ResidentsPerPage = 6;
-    private int TotalResidents = 18;
 
-    private int TotalPages => (int)Math.Ceiling((double)TotalResidents / ResidentsPerPage);
+    private int TotalResidents => employees.Count;
+    private int TotalPages => TotalResidents > 0 ? (int)Math.Ceiling((double)TotalResidents / ResidentsPerPage) : 1;
 
     private void GoToPage(int page)
     {

@@ -44,7 +44,7 @@ namespace API.Controllers
                 await _db.AuditLogs.AddAsync(new AuditLog
                 {
                     LogType  = "Access",
-                    Action   = "LoggedIn",
+                    Action   = "Bruger logget ind",
                     Entity   = "Auth",
                     EntityId = user.Id.ToString(),
                     UserId   = user.Id,
@@ -59,7 +59,7 @@ namespace API.Controllers
             await _db.AuditLogs.AddAsync(new AuditLog
             {
                 LogType  = "Access",
-                Action   = "FailedLogin",
+                Action   = "Login forsøg fejlet",
                 Entity   = "Auth",
                 EntityId = "unknown",
                 UserId   = null,

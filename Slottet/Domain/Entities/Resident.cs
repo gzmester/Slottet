@@ -9,6 +9,7 @@ public class Resident
     public string LastName { get; set; } = string.Empty;
     public string Room { get; set; } = string.Empty;
     public RiskLevel RiskLevel { get; set; }
+    public Mood Mood { get; set; } = Mood.Neutral;
     public string ShoppingDay { get; set; } = string.Empty;
     public string Payment { get; set; } = string.Empty;
 

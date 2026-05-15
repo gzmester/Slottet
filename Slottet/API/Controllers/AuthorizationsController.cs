@@ -26,10 +26,7 @@ public class AuthorizationsController : ControllerBase
             .Select(a => new AuthorizationResponseDto
             {
                 AuthorizationID = a.AuthorizationID,
-                Substitute      = a.Substitute,
-                Employee        = a.Employee,
-                Scheduler       = a.Scheduler,
-                Admin           = a.Admin
+                Role            = a.Role
             })
             .ToListAsync();
 

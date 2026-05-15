@@ -46,7 +46,11 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
             entity.Property(e => e.RiskLevel)
                   .HasConversion<string>()
                   .HasMaxLength(20);
-
+            entity.Property(e => e.Mood)
+                  .HasConversion<string>()
+                  .HasMaxLength(10)
+                  .HasDefaultValue(Domain.Enums.Mood.Neutral);
+            entity.Property(e => e.ShoppingDay).HasMaxLength(400);
             entity.HasOne(e => e.Location)
                   .WithMany(l => l.Residents)
                   .HasForeignKey(e => e.LocationID);
@@ -57,6 +61,10 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
         {
             entity.ToTable("Authorization");
             entity.HasKey(e => e.AuthorizationID);
+            entity.Property(e => e.Role)
+                  .HasConversion<string>()
+                  .HasMaxLength(20)
+                  .IsRequired();
         });
 
         // Role
@@ -94,6 +102,7 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
         {
             entity.ToTable("Medicin");
             entity.HasKey(e => e.MedicinID);
+            entity.Property(e => e.Type).HasMaxLength(50).IsRequired();
             entity.HasOne(e => e.Resident)
                   .WithMany(r => r.Medicins)
                   .HasForeignKey(e => e.ResidentID);

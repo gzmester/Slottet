@@ -2,6 +2,8 @@ using SlottetBlazor.Components;
 using SlottetBlazor.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +18,12 @@ builder.Services.AddScoped<ProtectedLocalStorage>();
 builder.Services.AddHttpClient("API", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"]!);
+});
+
+// Shared JSON options with enum-as-string support (matches API serialization)
+builder.Services.AddSingleton(new JsonSerializerOptions(JsonSerializerDefaults.Web)
+{
+    Converters = { new JsonStringEnumConverter() }
 });
 
 // Add custom authentication state provider
