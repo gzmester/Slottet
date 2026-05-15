@@ -183,42 +183,69 @@
 
     private void OpenAddModal()
     {
-        try
-        {
-            LocationsList = new List<Location>
-            {
-                new Location
-                {
-                    LocationID = 1,
-                    Name = "Afdeling A",
-                    Address = "Slotsvej 1",
-                    ZipCode = 8000,
-                    Residents = new List<Resident>
-                    {
-                        new Resident { ResidentID = 1, FirstName = "Lars", LastName = "Andersen", Room = "101" },
-                        new Resident { ResidentID = 2, FirstName = "Mette", LastName = "Hansen", Room = "102" },
-                    }
-                },
-                new Location
-                {
-                    LocationID = 2,
-                    Name = "Afdeling B",
-                    Address = "Slotsvej 2",
-                    ZipCode = 8000,
-                    Residents = new List<Resident>
-                    {
-                        new Resident { ResidentID = 3, FirstName = "Jens", LastName = "Christensen", Room = "201" }
-                    }
-                }
-            };
-        }
-        catch (HttpRequestException ex)
-        {
-            Debug.WriteLine(ex.Message);
-        }
-
+        newName = string.Empty;
+        newAddress = string.Empty;
+        newZipCode = 0;
+        saveError = null;
+        showModal = true;
     }
+
+    private void CloseModal()
+    {
+        showModal = false;
+    }
+
+    private async Task SaveLocationAsync()
+    {
+        saveError = null;
+
+        if (string.IsNullOrWhiteSpace(newName) || string.IsNullOrWhiteSpace(newAddress) || newZipCode <= 0)
+        {
+            saveError = "Udfyld venligst alle felter.";
+            return;
+        }
+
+        var dto = new LocationCreateDto
+        {
+            Name    = newName,
+            Address = newAddress,
+            ZipCode = newZipCode
+        };
+
+        var http = HttpClientFactory.CreateClient("API");
+        var response = await http.PostAsJsonAsync("api/locations", dto);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var created = await response.Content.ReadFromJsonAsync<LocationResponseDto>();
+            if (created is not null)
+                locations.Add(created);
+            CloseModal();
+        }
+        else
+        {
+            saveError = $"Fejl ved oprettelse: {response.StatusCode}";
+        }
+    }
+
+    private async Task DeleteLocationAsync(int locationId)
+    {
+        var http = HttpClientFactory.CreateClient("API");
+        var response = await http.DeleteAsync($"api/locations/{locationId}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            locations.RemoveAll(l => l.LocationID == locationId);
+            if (selectedLocationId == locationId)
+                selectedLocationId = null;
+        }
+    }
+
+    private static string GetRiskBadgeClass(string riskLevel) => riskLevel switch
+    {
+        "Green"  => "bg-success",
+        "Yellow" => "bg-warning text-dark",
+        "Red"    => "bg-danger",
+        _        => "bg-secondary"
+    };
 }
-
-
-
