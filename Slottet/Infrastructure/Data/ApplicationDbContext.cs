@@ -1,19 +1,22 @@
 using Domain.Entities;
 using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace Infrastructure.Data;
 
-public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
+public class ApplicationDbContext : IdentityDbContext<Employee, AppRole, int>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options) { }
 
+    // App entities
     public DbSet<Location> Locations { get; set; }
     public DbSet<Resident> Residents { get; set; }
     public DbSet<Employee> Employees { get; set; }
     public DbSet<Authorization> Authorizations { get; set; }
+    public DbSet<Role> ResponsibilityRoles { get; set; }
     public DbSet<Medicin> Medicins { get; set; }
     public DbSet<PNMedicin> PNMedicins { get; set; }
     public DbSet<Status> Statuses { get; set; }
@@ -24,6 +27,15 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // Rename Identity tables to match our naming convention
+        modelBuilder.Entity<Employee>(b => b.ToTable("Employee"));
+        modelBuilder.Entity<AppRole>(b => b.ToTable("AspNetRoles"));
+        modelBuilder.Entity<IdentityUserRole<int>>(b => b.ToTable("AspNetUserRoles"));
+        modelBuilder.Entity<IdentityRoleClaim<int>>(b => b.ToTable("AspNetRoleClaims"));
+        modelBuilder.Entity<IdentityUserClaim<int>>(b => b.ToTable("AspNetUserClaims"));
+        modelBuilder.Entity<IdentityUserLogin<int>>(b => b.ToTable("AspNetUserLogins"));
+        modelBuilder.Entity<IdentityUserToken<int>>(b => b.ToTable("AspNetUserTokens"));
 
         // Location
         modelBuilder.Entity<Location>(entity =>
@@ -49,14 +61,14 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
             entity.Property(e => e.Mood)
                   .HasConversion<string>()
                   .HasMaxLength(10)
-                  .HasDefaultValue(Domain.Enums.Mood.Neutral);
+                  .HasDefaultValue(Mood.Neutral);
             entity.Property(e => e.ShoppingDay).HasMaxLength(400);
             entity.HasOne(e => e.Location)
                   .WithMany(l => l.Residents)
                   .HasForeignKey(e => e.LocationID);
         });
 
-        // Authorization
+        // Authorization (adgangsrolle: CareStaff, Scheduler, Admin, Substitute)
         modelBuilder.Entity<Authorization>(entity =>
         {
             entity.ToTable("Authorization");
@@ -67,7 +79,8 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
                   .IsRequired();
         });
 
-        // Role
+        // Role (ansvarsområde: "Daglig pleje og medicin", etc.)
+        // Dette er IKKE en Identity-rolle – det er en almindelig entitet
         modelBuilder.Entity<Role>(entity =>
         {
             entity.ToTable("Role");
@@ -76,10 +89,9 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
             entity.Property(e => e.ResponsibilityArea).HasMaxLength(50);
         });
 
-        // Employee – many-to-many with Role via implicit join table
+        // Employee – IdentityUser<int> with custom properties
         modelBuilder.Entity<Employee>(entity =>
         {
-            entity.ToTable("Employee");
             entity.Property(e => e.FirstName).HasMaxLength(50).IsRequired();
             entity.Property(e => e.LastName).HasMaxLength(50).IsRequired();
             entity.Property(e => e.Email).HasMaxLength(80);
@@ -92,6 +104,7 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
                   .WithMany(a => a.Employees)
                   .HasForeignKey(e => e.AuthorizationID);
 
+            // Many-to-many: Employee <-> Role (ansvarsområder) via EmployeeRole join table
             entity.HasMany(e => e.Roles)
                   .WithMany(r => r.Employees)
                   .UsingEntity(j => j.ToTable("EmployeeRole"));
@@ -137,7 +150,7 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
             entity.Property(e => e.AssignedTo).HasMaxLength(50);
         });
 
-        // Shift
+        // Shift (vagttyper: Day, Midday, Night)
         modelBuilder.Entity<Shift>(entity =>
         {
             entity.ToTable("Shift");
@@ -146,14 +159,16 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
                   .HasConversion<string>()
                   .HasMaxLength(20)
                   .IsRequired();
-            entity.Property(e => e.Date).IsRequired();
+            entity.Property(e => e.Date)
+                  .HasColumnType("date")
+                  .IsRequired();
 
             entity.HasOne(e => e.Employee)
                   .WithMany(emp => emp.Shifts)
                   .HasForeignKey(e => e.EmployeeID);
         });
 
-        //AuditLog
+        // AuditLog
         modelBuilder.Entity<AuditLog>(entity =>
         {
             entity.ToTable("AuditLog");
@@ -164,6 +179,5 @@ public class ApplicationDbContext : IdentityDbContext<Employee, Role, int>
             entity.Property(e => e.EntityId).HasMaxLength(50);
             entity.Property(e => e.UserName).HasMaxLength(100);
         });
-
     }
 }

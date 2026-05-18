@@ -1,11 +1,4 @@
-﻿@using Microsoft.AspNetCore.Components.Authorization
-@using SlottetBlazor.Services
-@using System.Text.Json
-
 @inherits LayoutComponentBase
-@inject HttpClient Http
-@inject AuthenticationStateProvider AuthStateProvider
-@inject NavigationManager NavigationManager
 
 <div class="page">
     <div class="sidebar">
@@ -14,34 +7,8 @@
 
     <main>
         <header class="header">
-            <input type="date" @bind="startDate" class="form-control header-date-input"/>
-
-            <div class="header-right">
-                <AuthorizeView Context="authContext">
-                    <Authorized>
-                        <span style="margin-right: 10px; color: white;">@((MarkupString)($"Hej {userDisplayName}"))</span>
-                        <AuthorizeView Roles="Admin" Context="adminContext">
-                            <Authorized>
-                                <span style="margin-right: 10px; background-color: #ff6b6b; padding: 2px 6px; border-radius: 3px; color: white; font-weight: bold;">Admin</span>
-                            </Authorized>
-                        </AuthorizeView>
-                        <button class="btn btn-danger header-logout-button" @onclick="OnLogoutClick">
-                            Log ud
-                        </button>
-                    </Authorized>
-                    <NotAuthorized>
-                        <input class="form-control header-pincode-input" type="password" placeholder="pinkode" maxlength="6" @bind="pincode" @onkeyup="OnPincodeKeyUp"/>
-                        <button class="btn btn-primary" style="margin-left: 5px;" @onclick="OnLoginClick" disabled="@isLoggingIn">
-                            @(isLoggingIn ? "Logger ind..." : "Log ind")
-                        </button>
-                    </NotAuthorized>
-                </AuthorizeView>
-                @if (!string.IsNullOrEmpty(errorMessage))
-                {
-                    <div style="color: red; margin-left: 10px;">@errorMessage</div>
-                }
-            </div>
-            
+            <input type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control header-date-input" readonly />
+            <LoginHeader />
         </header>
 
         <article class="content px-4">
@@ -50,10 +17,10 @@
     </main>
 
     <footer class="footer-container-flex footer">
-        <h2  class="footer-text-box"> HUSK Risiko vurdering</h2>
-        <h2  class="footer-text-box"> HUSK Medicin</h2>
-        <h2  class="footer-text-box"> HUSK Sundhedsplanner</h2>
-        <h2  class="footer-text-box"> HUSK Delmål</h2>
+        <h2 class="footer-text-box">HUSK Risiko vurdering</h2>
+        <h2 class="footer-text-box">HUSK Medicin</h2>
+        <h2 class="footer-text-box">HUSK Sundhedsplanner</h2>
+        <h2 class="footer-text-box">HUSK Delmål</h2>
     </footer>
 </div>
 
@@ -62,115 +29,3 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
-
-@code {
-    //Sætter start datoen for kalenderen til i dag.
-    private DateTime startDate = DateTime.Today;
-
-    private string pincode = "";
-    private string errorMessage = "";
-    private bool isLoggingIn = false;
-    private string userDisplayName = "";
-
-
-    protected override async Task OnInitializedAsync()
-    {
-        // Load the current user's name from the authentication state
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-        if (user.Identity?.IsAuthenticated ?? false)
-        {
-            userDisplayName = user.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "User";
-        }
-    }
-
-    private async Task OnLoginClick()
-    {
-        if (string.IsNullOrWhiteSpace(pincode) || pincode.Length != 6)
-        {
-            errorMessage = "Pincode må være 6 cifre";
-            return;
-        }
-
-        isLoggingIn = true;
-        errorMessage = "";
-
-        try
-        {
-            if (!int.TryParse(pincode, out int pincodeValue))
-            {
-                errorMessage = "Pincode skal være tal";
-                isLoggingIn = false;
-                return;
-            }
-
-            Console.WriteLine($"Attempting login with pincode: {pincodeValue}");
-            var response = await Http.PostAsJsonAsync("/api/auth/login", new { pincode = pincodeValue });
-
-            Console.WriteLine($"Response status: {response.StatusCode}");
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Login response: {content}");
-                using (JsonDocument doc = JsonDocument.Parse(content))
-                {
-                    var root = doc.RootElement;
-                    var token = root.GetProperty("Token").GetString();
-                    var employeeName = root.GetProperty("EmployeeName").GetString();
-
-                    // Cast to ApiAuthenticationStateProvider and mark as authenticated
-                    var authProvider = AuthStateProvider as ApiAuthenticationStateProvider;
-                    if (authProvider != null && token != null)
-                    {
-                        await authProvider.MarkUserAsAuthenticated(token);
-                        userDisplayName = employeeName ?? "User";
-                        pincode = "";
-                        errorMessage = ""; // Clear error on success
-                    }
-                    else
-                    {
-                        errorMessage = "Login fejl: Kunne ikke initialisere authentication";
-                    }
-                }
-            }
-            else
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Login error response ({response.StatusCode}): {errorContent}");
-                errorMessage = "Forkert pinkode eller API-fejl";
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Login exception: {ex}");
-            errorMessage = "Fejl ved login: " + ex.Message;
-        }
-        finally
-        {
-            isLoggingIn = false;
-        }
-    }
-
-    private async Task OnLogoutClick()
-    {
-        var authProvider = AuthStateProvider as ApiAuthenticationStateProvider;
-        if (authProvider != null)
-        {
-            await authProvider.MarkUserAsLoggedOut();
-            userDisplayName = "";
-        }
-    }
-
-    private async Task OnPincodeKeyUp(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter" && pincode.Length == 6 && !isLoggingIn)
-        {
-            await OnLoginClick();
-        }
-    }
-}
- 
-
-
-

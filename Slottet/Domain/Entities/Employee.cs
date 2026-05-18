@@ -6,7 +6,9 @@ public class Employee : IdentityUser<int>
 {
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
-    public int PinCode { get; set; }
+
+    /// <summary>Whether the employee has set up their pincode (PasswordHash) yet</summary>
+    public bool HasPincode => !string.IsNullOrEmpty(PasswordHash);
 
     // FKs
     public int LocationID { get; set; }
@@ -15,9 +17,9 @@ public class Employee : IdentityUser<int>
     public int AuthorizationID { get; set; }
     public Authorization Authorization { get; set; } = null!;
 
-    // Many-to-many via linking table
+    // Many-to-many: Ansvarsområder (job descriptions) via EmployeeRole join table
     public ICollection<Role> Roles { get; set; } = new List<Role>();
 
-    // One-to-many
+    // One-to-many: Vagter
     public ICollection<Shift> Shifts { get; set; } = new List<Shift>();
 }

@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage; // Required for persistence
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json;
@@ -10,18 +10,24 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
 {
     private readonly HttpClient _httpClient;
     private readonly ProtectedLocalStorage _localStorage;
+    private readonly ILogger<ApiAuthenticationStateProvider> _logger;
 
-    public ApiAuthenticationStateProvider(HttpClient httpClient, ProtectedLocalStorage localStorage)
+    public ApiAuthenticationStateProvider(
+        HttpClient httpClient,
+        ProtectedLocalStorage localStorage,
+        ILogger<ApiAuthenticationStateProvider> logger)
     {
         _httpClient = httpClient;
         _localStorage = localStorage;
+        _logger = logger;
     }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
         try
         {
-            // 1. Try to load the token from the browser's local storage
+            // ProtectedLocalStorage is not available during pre-rendering
+            // This try-catch handles that gracefully
             var result = await _localStorage.GetAsync<string>("authToken");
             var savedToken = result.Success ? result.Value : null;
 
@@ -30,23 +36,49 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
                 return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
             }
 
-            // 2. Attach the token to the HttpClient so the API accepts our calls
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", savedToken);
+            // Attach the token to HttpClient for API calls
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", savedToken);
 
-            // 3. Decode the token to see who the user is
-            return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(savedToken), "jwt")));
+            // Decode the JWT token to create claims
+            var claims = ParseClaimsFromJwt(savedToken);
+            return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(claims, "jwt")));
         }
-        catch
+        catch (Exception ex)
         {
-            // If storage isn't available yet (common during startup), return "Not Logged In"
+            // During pre-rendering, JavaScript interop is not available yet
+            // Return anonymous user - will be re-evaluated after SignalR connection
+            _logger.LogDebug("Could not read auth token during pre-render: {Message}", ex.Message);
             return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
         }
     }
 
+    /// <summary>Returns the stored JWT token, or null if not logged in.</summary>
+    public async Task<string?> GetTokenAsync()
+    {
+        try
+        {
+            var result = await _localStorage.GetAsync<string>("authToken");
+            return result.Success ? result.Value : null;
+        }
+        catch { return null; }
+    }
+
     public async Task MarkUserAsAuthenticated(string token)
     {
-        // Save the token to the browser so the user stays logged in
-        await _localStorage.SetAsync("authToken", token);
+        try
+        {
+            await _localStorage.SetAsync("authToken", token);
+        }
+        catch (Exception ex)
+        {
+            // May fail during pre-rendering, but we still update the auth state
+            _logger.LogWarning("Could not save auth token to local storage: {Message}", ex.Message);
+        }
+
+        // Attach token to HttpClient for subsequent API calls
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
 
         var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt"));
         var authState = Task.FromResult(new AuthenticationState(authenticatedUser));
@@ -55,8 +87,17 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
 
     public async Task MarkUserAsLoggedOut()
     {
-        // Delete the token from the browser
-        await _localStorage.DeleteAsync("authToken");
+        try
+        {
+            await _localStorage.DeleteAsync("authToken");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Could not delete auth token from local storage: {Message}", ex.Message);
+        }
+
+        // Remove token from HttpClient
+        _httpClient.DefaultRequestHeaders.Authorization = null;
 
         var anonymousUser = new ClaimsPrincipal(new ClaimsIdentity());
         var authState = Task.FromResult(new AuthenticationState(anonymousUser));

@@ -16,8 +16,8 @@ public class EmployeeUpdateDto
     [Required]
     public string PhoneNumber { get; set; } = string.Empty;
 
-    [Required]
-    public int PinCode { get; set; }
+    /// <summary>Optional: set new pincode. Leave empty to keep existing.</summary>
+    public string? NewPincode { get; set; }
 
     [Required]
     public int LocationID { get; set; }

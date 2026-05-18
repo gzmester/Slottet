@@ -17,11 +17,9 @@ public class EmployeeCreateDto
     public string PhoneNumber { get; set; } = string.Empty;
 
     [Required]
-    public int PinCode { get; set; }
-
-    [Required]
     public int LocationID { get; set; }
 
+    /// <summary>Identity-rolle: Admin, Vagtansvarlig eller Plejepersonale</summary>
     [Required]
-    public int AuthorizationID { get; set; }
+    public string Role { get; set; } = "Plejepersonale";
 }
