@@ -26,17 +26,25 @@
         </tr>
     </table>
 
-    
+    @* Medicin & PN Table *@
     <table class="resident-middle-table">
         <tr>
             <td>Medicin</td>
-            @foreach (var med in Medicins)
+            @for (int i = 0; i < 4; i++)
             {
+                var med = _sortedMedicins.Count > i ? _sortedMedicins[i] : null;
                 <td>
                     <div class="flex-container">
-                        <small>@med.Type</small>
-                        <input type="time" class="table-input" value="@FormatTime(med.Time)" readonly />
-                        <input type="checkbox" class="checkbox-input" checked="@med.IsTaken" @onchange="() => ToggleIsTakenAsync(med)" />
+                        @if (med != null)
+                        {
+                            <input type="time" class="table-input" value="@med.Time.ToString("HH:mm")" @onchange="(ChangeEventArgs e) => OnTimeInputChange(med, e)" />
+                            <input type="checkbox" class="checkbox-input" checked="@med.IsTaken" @onchange="() => ToggleIsTakenAsync(med)" />
+                        }
+                        else
+                        {
+                            <input type="time" class="table-input" disabled />
+                            <input type="checkbox" class="checkbox-input" disabled />
+                        }
                     </div>
                 </td>
             }
@@ -60,7 +68,7 @@
     </table>
     
 
-
+    @* HandleDag, Betaling & Status*@
     <table class="resident-bottom-table">
         <tr>
             <td class="text-nowrap" style="width: 1%;"><strong>HandleDag</strong></td>
@@ -71,17 +79,28 @@
             <td><input type="text" class="table-input" @bind="Payment" @bind:event="oninput" @onchange="SaveChanges" placeholder="eks. Eget kort, Kontant fra kontor: 400,-"/></td>
         </tr>
         <tr>
-            <td class="text-nowrap" style="width: 1%;"><strong>Status</strong></td>
+            <td class="text-nowrap" style="width: 1%; vertical-align: top;">
+                <div class="d-flex flex-column align-items-start">
+                    <strong>Status</strong>
+                    @if (_displayStatuses.Count > 1)
+                    {
+                        <button class="btn btn-link btn-sm p-0" @onclick="() => _showStatusModal = true">
+                            Se alle (@_displayStatuses.Count)
+                        </button>
+                    }
+                </div>
+            </td>
+            
             <td>
-                @foreach (var s in _displayStatuses.Take(2))
+
+                <textarea rows="1" maxlength="200" class="table-input" @bind="Status" @bind:event="oninput" @onchange="SaveChanges" placeholder="Tilføj status... (max 200 tegn)"></textarea>
+
+                @foreach (var s in _displayStatuses.Take(1))
                 {
                     <div class="status-entry"><span class="text-muted small">@s.Time.ToString("HH:mm")</span> @s.Description</div>
                 }
-                @if (_displayStatuses.Count > 2)
-                {
-                    <button class="btn btn-link btn-sm p-0" @onclick="() => _showStatusModal = true">Se alle (@_displayStatuses.Count)</button>
-                }
-                <textarea rows="2" maxlength="200" class="table-input" @bind="Status" @bind:event="oninput" @onchange="SaveChanges" placeholder="Tilføj status... (max 200 tegn)"></textarea>
+
+                
             </td>
         </tr>
     </table>
@@ -151,10 +170,16 @@
     private string Status = string.Empty;
     private List<StatusDto> _displayStatuses = new();
     private bool _showStatusModal = false;
+    private List<MedicinDto> _sortedMedicins = new();
 
     protected override void OnParametersSet()
     {
         _displayStatuses = Statuses.ToList();
+        // Sort medicines by time of day and take first 4
+        _sortedMedicins = Medicins
+            .OrderBy(m => m.Time.TimeOfDay)
+            .Take(4)
+            .ToList();
     }
 
     private async Task SaveChanges()
@@ -198,6 +223,30 @@
         await http.PatchAsync($"api/medicin/{med.MedicinID}/taken?isTaken={med.IsTaken}", null);
     }
 
+    private async Task OnTimeInputChange(MedicinDto med, ChangeEventArgs e)
+    {
+        if (e.Value is string timeString && !string.IsNullOrEmpty(timeString))
+        {
+            // Parse the time string (HH:mm format from the time input)
+            if (TimeSpan.TryParse(timeString, out var timeSpan))
+            {
+                // Update the medicine's time while keeping the date part
+                med.Time = med.Time.Date.Add(timeSpan);
+                
+                var http = HttpClientFactory.CreateClient("API");
+                try
+                {
+                    // Send PUT request to update the medicine time
+                    await http.PutAsJsonAsync($"api/medicin/{med.MedicinID}", new { Time = med.Time });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error updating medicine time: {ex}");
+                }
+            }
+        }
+    }
+
     private void OnRiskLevelChange(ChangeEventArgs e)
     {
         RiskLevel = e.Value?.ToString() ?? "";
@@ -209,8 +258,6 @@
         Mood = e.Value?.ToString() ?? "Neutral";
         _ = SaveChanges();
     }
-
-    private static string FormatTime(DateTime dt) => dt.ToString("HH:mm");
 
     private string GetRiskClass() => RiskLevel switch
     {
