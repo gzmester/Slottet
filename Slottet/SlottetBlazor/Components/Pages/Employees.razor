@@ -2,63 +2,103 @@
 @rendermode InteractiveServer
 @using Application.DTOs.Employee
 @using Application.DTOs.Location
-@using Application.DTOs.Authorization
-@using Domain.Enums
 @using System.Text.Json
+@using System.Net.Http.Headers
 @inject IHttpClientFactory HttpClientFactory
+@inject IJSRuntime JS
 @inject JsonSerializerOptions JsonOptions
 
-@*Overskrift med ikon*@
 <h1>
-    <img src="images/icons/Employee.svg" style="width: 32px; height: 32px;"  />
+    <img src="images/icons/Employee.svg" style="width: 32px; height: 32px;" />
     Ansatte
 </h1>
 
-@*Tabel som viser ansatte med navn, tlf, pinkode og rettigheder, samt en slet knap*@
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Navn</th>
-            <th>Telefonnummer</th>
-            <th>Pinkode</th>
-            <th>Rettigheder</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @*Itererer gennem listen af ansatte og bruger informationerne til at vise dem i tabellen*@
-        @foreach(var employee in employees)
-        {
+@if (loadError is not null)
+{
+    <div class="alert alert-danger">@loadError</div>
+}
+else if (isLoading)
+{
+    <p><em>Henter ansatte...</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
             <tr>
-                <td>@employee.FirstName @employee.LastName</td>
-                <td>@employee.PhoneNumber</td>
-                <td>@employee.PinCode</td>
-                <td>@string.Join(", ", employee.Roles)</td>
-                <td><button class="btn btn-danger" @onclick="() => DeleteEmployeeAsync(employee)">Slet</button></td>
+                <th>Navn</th>
+                <th>E-mail</th>
+                <th>Telefon</th>
+                <th>Pinkode</th>
+                <th>Lokation</th>
+                <th>Rolle</th>
+                <th>Ansvarsområde</th>
+                @if (isAdmin)
+                {
+                    <th></th>
+                }
             </tr>
-        }
-    </tbody>
-</table>
-@*Tilføj medarbejder knap*@
-<button class="btn btn-primary" @onclick="AddEmployeeAsync">+ Tilføj Ansat</button>
+        </thead>
+        <tbody>
+            @foreach (var employee in employees)
+            {
+                <tr>
+                    <td>@employee.FirstName @employee.LastName</td>
+                    <td>@employee.Email</td>
+                    <td>@employee.PhoneNumber</td>
+                    <td>@(employee.HasPincode ? "Oprettet" : "Mangler")</td>
+                    <td>@employee.LocationName</td>
+                    <td>
+                        @if (employee.Roles.Count == 0)
+                        {
+                            <span class="badge bg-secondary">Ingen</span>
+                        }
+                        @foreach (var r in employee.Roles)
+                        {
+                            var color = r == "Admin" ? "danger" : r == "Vagtansvarlig" ? "warning" : "primary";
+                            <span class="badge bg-@color me-1">@r</span>
+                        }
+                    </td>
+                    <td>
+                        @if (employee.JobRoles.Count == 0)
+                        {
+                            <span class="badge bg-secondary">Ingen</span>
+                        }
+                        @foreach (var jr in employee.JobRoles)
+                        {
+                            <span class="badge bg-info me-1">@jr</span>
+                        }
+                    </td>
+                    @if (isAdmin)
+                    {
+                        <td>
+                            <button class="btn btn-sm btn-warning me-1" @onclick="() => OpenRoleModal(employee)">Rolle</button>
+                            <button class="btn btn-sm btn-info me-1" @onclick="() => OpenJobRoleModal(employee)">Ansvar</button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteEmployeeAsync(employee)">Slet</button>
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
 
-@* Modal til at tilføje en ny ansat *@
-@*showModal bliver true når bruger trykker på "tilføj ansat" knappen, og derefter vises modalen*@
-@*Modalen er bygget op efter bootsraps dokumentations eksempel*@
-@if(showModal)
+
+    @if (isAdmin)
+    {
+        <button class="btn btn-primary mb-3" @onclick="OpenAddModal">+ Tilføj Ansat</button>
+    }
+}
+
+@* ── Modal: Tilføj Ansat ── *@
+@if (showModal)
 {
     <div class="modal d-block" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Tilføj Ansat</h5>
-                    <button type="button" class="btn-close" @onclick="() => CloseModal()" aria-label="Close"></button>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
                 </div>
-                @* Formular til at tilføje en ny ansat 
-                Hvor hvert felt har en inputfelt
-                mb-3 er afstnanden mellem hvert felt
-                form-label giver skriftstørrelse til label
-                form-control giver inputfeltet en bestemt størrelse og stil*@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Fornavn</label>
@@ -70,20 +110,16 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">E-mail</label>
-                        <input type="email" maxlength="45" class="form-control" @bind="newEmail" />
+                        <input type="email" maxlength="80" class="form-control" @bind="newEmail" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Telefonnummer</label>
                         <input type="tel" maxlength="8" class="form-control" @bind="newPhoneNumber" />
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Pinkode</label>
-                        <input type="password" maxlength="6" class="form-control" @bind="newPinCode" />
-                    </div>
-                    <div class="mb-3">
                         <label class="form-label">Lokation</label>
                         <select class="form-select" @bind="newLocationID">
-                            <option value="0">Vælg lokation</option>
+                            <option value="0">Vaelg lokation</option>
                             @foreach (var loc in locations)
                             {
                                 <option value="@loc.LocationID">@loc.Name</option>
@@ -91,22 +127,12 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Autorisation</label>
-                        <select class="form-select" @bind="newAuthorizationID">
-                            <option value="0">Vælg autorisation</option>
-                            @foreach (var auth in authorizations)
+                        <label class="form-label">Identity-rolle</label>
+                        <select class="form-select" @bind="newRole">
+                            @foreach (var role in availableRoles)
                             {
-                                <option value="@auth.AuthorizationID">@RoleDisplayName(auth.Role)</option>
+                                <option value="@role">@role</option>
                             }
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Vagttype</label>
-                        <select class="form-select" @bind="newShiftType">
-                            <option value="">Vælg vagttype</option>
-                            <option value="Day">Dag</option>
-                            <option value="Midday">Middag</option>
-                            <option value="Night">Nat</option>
                         </select>
                     </div>
                     @if (saveError is not null)
@@ -115,138 +141,348 @@
                     }
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="() => CloseModal()">Luk</button>
-                    <button type="button" class="btn btn-primary" @onclick="SaveEmployeeAsync">Gem</button>
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Luk</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveEmployeeAsync" disabled="@isSaving">
+                        @(isSaving ? "Gemmer..." : "Gem")
+                    </button>
                 </div>
             </div>
         </div>
     </div>
-    @*Gør baggrunden mørkere mens modalen er åben, så man kan skelne mellem baggrunden og modalen*@
     <div class="modal-backdrop fade show"></div>
 }
 
+@* ── Modal: Rolle ── *@
+@if (showRoleModal)
+{
+    <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.5)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Rolle for @roleModalEmployeeName</h5>
+                    <button type="button" class="btn-close" @onclick="() => showRoleModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Vaalg Identity-rolle (styrer adgang i systemet):</p>
+                    @foreach (var role in availableRoles)
+                    {
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="roleSelect"
+                                   id="role_@role"
+                                   checked="@(selectedRole == role)"
+                                   @onchange="() => selectedRole = role" />
+                            <label class="form-check-label" for="role_@role">
+                                @RoleBadge(role) @RoleDescription(role)
+                            </label>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(roleError))
+                    {
+                        <div class="alert alert-danger mt-2">@roleError</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => showRoleModal = false">Annuller</button>
+                    <button class="btn btn-primary" @onclick="OnSaveRole" disabled="@isSavingRole">
+                        @(isSavingRole ? "Gemmer..." : "Gem rolle")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── Modal: Ansvarsområde ── *@
+@if (showJobRoleModal)
+{
+    <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.5)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ansvarsområde for @jobRoleModalEmployeeName</h5>
+                    <button type="button" class="btn-close" @onclick="() => showJobRoleModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Vælg ansvarsområder (jobfunktioner):</p>
+                    @foreach (var jr in availableJobRoles)
+                    {
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox"
+                                   id="jr_@jr"
+                                   checked="@(selectedJobRoles.Contains(jr))"
+                                   @onchange="() => ToggleJobRole(jr)" />
+                            <label class="form-check-label" for="jr_@jr">@jr</label>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(jobRoleError))
+                    {
+                        <div class="alert alert-danger mt-2">@jobRoleError</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => showJobRoleModal = false">Annuller</button>
+                    <button class="btn btn-primary" @onclick="OnSaveJobRoles" disabled="@isSavingJobRole">
+                        @(isSavingJobRole ? "Gemmer..." : "Gem ansvarsområder")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
-    private bool showModal = false;
-
-    private string newFirstName = string.Empty;
-    private string newLastName = string.Empty;
-    private string newEmail = string.Empty;
-    private string newPhoneNumber = string.Empty;
-    private string newPinCode = string.Empty;
-    private int newLocationID;
-    private int newAuthorizationID;
-    private string newShiftType = string.Empty;
-    private string? saveError;
-
     private List<EmployeeResponseDto> employees = new();
     private List<LocationResponseDto> locations = new();
-    private List<AuthorizationResponseDto> authorizations = new();
+    private string? loadError;
+    private bool isLoading = true;
+    private bool isAdmin = false;
+
+    private bool showModal = false;
+    private bool isSaving = false;
+    private string newFirstName = "";
+    private string newLastName = "";
+    private string newEmail = "";
+    private string newPhoneNumber = "";
+    private int newLocationID;
+    private string newRole = "Plejepersonale";
+    private string? saveError;
+
+    private bool showRoleModal = false;
+    private int roleModalEmployeeId;
+    private string roleModalEmployeeName = "";
+    private string selectedRole = "Plejepersonale";
+    private string roleError = "";
+    private bool isSavingRole = false;
+    private List<string> availableRoles = new() { "Admin", "Vagtansvarlig", "Plejepersonale" };
+
+    // Ansvarsområde modal state
+    private bool showJobRoleModal = false;
+    private int jobRoleModalEmployeeId;
+    private string jobRoleModalEmployeeName = "";
+    private List<string> availableJobRoles = new();
+    private HashSet<string> selectedJobRoles = new();
+    private string jobRoleError = "";
+    private bool isSavingJobRole = false;
+
+    private async Task<HttpClient> GetAuthClientAsync()
+    {
+        var http = HttpClientFactory.CreateClient("API");
+        try
+        {
+            var token = await JS.InvokeAsync<string?>("localStorage.getItem", "authToken");
+            if (!string.IsNullOrEmpty(token))
+                http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+        catch { }
+        return http;
+    }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var http = HttpClientFactory.CreateClient("API");
+            var token = await JS.InvokeAsync<string?>("localStorage.getItem", "authToken");
+            if (!string.IsNullOrEmpty(token))
+            {
+                var claims = ParseClaimsFromJwt(token);
+                isAdmin = claims.Any(c => c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role" && c.Value == "Admin");
+            }
+        }
+        catch { }
 
-            var empTask  = http.GetFromJsonAsync<List<EmployeeResponseDto>>("api/employees", JsonOptions);
-            var locTask  = http.GetFromJsonAsync<List<LocationResponseDto>>("api/locations", JsonOptions);
-            var authTask = http.GetFromJsonAsync<List<AuthorizationResponseDto>>("api/authorizations", JsonOptions);
-
-            await Task.WhenAll(empTask, locTask, authTask);
-
-            if (empTask.Result  is not null) employees      = empTask.Result;
-            if (locTask.Result  is not null) locations      = locTask.Result;
-            if (authTask.Result is not null) authorizations = authTask.Result;
+        isLoading = true;
+        loadError = null;
+        try
+        {
+            var http = await GetAuthClientAsync();
+            var empTask = http.GetFromJsonAsync<List<EmployeeResponseDto>>("api/employees", JsonOptions);
+            var locTask = http.GetFromJsonAsync<List<LocationResponseDto>>("api/locations", JsonOptions);
+            var jrTask = http.GetFromJsonAsync<List<System.Text.Json.JsonElement>>("api/employees/job-roles");
+            await Task.WhenAll(empTask, locTask, jrTask);
+            if (empTask.Result is not null) employees = empTask.Result;
+            if (locTask.Result is not null) locations = locTask.Result;
+            if (jrTask.Result is not null)
+                availableJobRoles = jrTask.Result.Select(j => j.GetProperty("name").GetString() ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList();
         }
         catch (HttpRequestException ex)
         {
-            Debug.WriteLine(ex.Message);
+            loadError = $"Kunne ikke hente data: {ex.Message}";
         }
-
+        finally
+        {
+            isLoading = false;
+        }
     }
 
-    private void AddEmployeeAsync()
+    private void OpenAddModal()
     {
-        newFirstName = string.Empty;
-        newLastName = string.Empty;
-        newEmail = string.Empty;
-        newPhoneNumber = string.Empty;
-        newPinCode = string.Empty;
+        newFirstName = newLastName = newEmail = newPhoneNumber = "";
         newLocationID = 0;
-        newAuthorizationID = 0;
-        newShiftType = string.Empty;
+        newRole = "Plejepersonale";
         saveError = null;
         showModal = true;
     }
 
+    private void CloseModal() => showModal = false;
+
     private async Task SaveEmployeeAsync()
     {
         saveError = null;
+        if (string.IsNullOrWhiteSpace(newFirstName) || string.IsNullOrWhiteSpace(newLastName))
+        { saveError = "Fornavn og efternavn er paa kraevet."; return; }
+        if (string.IsNullOrWhiteSpace(newEmail))
+        { saveError = "E-mail er paa kraevet."; return; }
+        if (string.IsNullOrWhiteSpace(newPhoneNumber))
+        { saveError = "Telefonnummer er paa kraevet."; return; }
+        if (newLocationID == 0)
+        { saveError = "Vaalg venligst en lokation."; return; }
 
-        if (!int.TryParse(newPhoneNumber, out var phone))
+        isSaving = true;
+        try
         {
-            saveError = "Telefonnummer skal være et tal.";
-            return;
+            var dto = new EmployeeCreateDto
+            {
+                FirstName   = newFirstName,
+                LastName    = newLastName,
+                Email       = newEmail,
+                PhoneNumber = newPhoneNumber,
+                LocationID  = newLocationID,
+                Role        = newRole,
+            };
+            var http = await GetAuthClientAsync();
+            var response = await http.PostAsJsonAsync("api/employees", dto);
+            if (response.IsSuccessStatusCode)
+            {
+                var created = await response.Content.ReadFromJsonAsync<EmployeeResponseDto>(JsonOptions);
+                if (created is not null) employees.Add(created);
+                CloseModal();
+            }
+            else
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                saveError = $"Fejl ({response.StatusCode}): {body}";
+            }
         }
-        if (!int.TryParse(newPinCode, out var pin))
-        {
-            saveError = "Pinkode skal være et tal.";
-            return;
-        }
-        if (newLocationID == 0 || newAuthorizationID == 0 || string.IsNullOrEmpty(newShiftType))
-        {
-            saveError = "Udfyld venligst alle felter.";
-            return;
-        }
-
-        var dto = new EmployeeCreateDto
-        {
-            FirstName       = newFirstName,
-            LastName        = newLastName,
-            Email           = newEmail,
-            PhoneNumber     = newPhoneNumber,
-            PinCode         = pin,
-            LocationID      = newLocationID,
-            AuthorizationID = newAuthorizationID,
-            //ShiftType       = newShiftType
-        };
-
-        var http = HttpClientFactory.CreateClient("API");
-        var response = await http.PostAsJsonAsync("api/employees", dto);
-
-        if (response.IsSuccessStatusCode)
-        {
-            var created = await response.Content.ReadFromJsonAsync<EmployeeResponseDto>();
-            if (created is not null)
-                employees.Add(created);
-            CloseModal();
-        }
-        else
-        {
-            saveError = $"Fejl ved oprettelse: {response.StatusCode}";
-        }
+        catch (Exception ex) { saveError = "Fejl: " + ex.Message; }
+        finally { isSaving = false; }
     }
 
     private async Task DeleteEmployeeAsync(EmployeeResponseDto employee)
     {
-        var http = HttpClientFactory.CreateClient("API");
+        var http = await GetAuthClientAsync();
         var response = await http.DeleteAsync($"api/employees/{employee.Id}");
         if (response.IsSuccessStatusCode)
             employees.Remove(employee);
     }
 
-    private void CloseModal()
+    private void OpenRoleModal(EmployeeResponseDto employee)
     {
-        showModal = false;
+        roleModalEmployeeId   = employee.Id;
+        roleModalEmployeeName = $"{employee.FirstName} {employee.LastName}";
+        selectedRole = employee.Roles.Contains("Admin") ? "Admin"
+                     : employee.Roles.Contains("Vagtansvarlig") ? "Vagtansvarlig"
+                     : "Plejepersonale";
+        roleError = "";
+        showRoleModal = true;
     }
 
-    private static string RoleDisplayName(AuthorizationRole role) => role switch
+    private async Task OnSaveRole()
     {
-        AuthorizationRole.CareStaff => "Plejepersonale",
-        AuthorizationRole.Scheduler => "Planlægger",
-        AuthorizationRole.Admin     => "Admin",
-        AuthorizationRole.Substitute => "Substitut",
-        _                           => role.ToString()
+        isSavingRole = true;
+        roleError = "";
+        try
+        {
+            var http = await GetAuthClientAsync();
+            var response = await http.PostAsJsonAsync("/api/auth/assign-role",
+                new { employeeId = roleModalEmployeeId, role = selectedRole });
+            if (response.IsSuccessStatusCode)
+            {
+                showRoleModal = false;
+                var result = await http.GetFromJsonAsync<List<EmployeeResponseDto>>("api/employees", JsonOptions);
+                if (result is not null) employees = result;
+            }
+            else
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                roleError = $"Fejl ({response.StatusCode}): {body}";
+            }
+        }
+        catch (Exception ex) { roleError = "Fejl: " + ex.Message; }
+        finally { isSavingRole = false; }
+}
+
+    private void OpenJobRoleModal(EmployeeResponseDto employee)
+    {
+        jobRoleModalEmployeeId = employee.Id;
+        jobRoleModalEmployeeName = $"{employee.FirstName} {employee.LastName}";
+        selectedJobRoles = new HashSet<string>(employee.JobRoles);
+        jobRoleError = "";
+        showJobRoleModal = true;
+    }
+
+    private void ToggleJobRole(string role)
+    {
+        if (!selectedJobRoles.Remove(role))
+            selectedJobRoles.Add(role);
+    }
+
+    private async Task OnSaveJobRoles()
+    {
+        isSavingJobRole = true;
+        jobRoleError = "";
+        try
+        {
+            var http = await GetAuthClientAsync();
+            var response = await http.PutAsJsonAsync($"api/employees/{jobRoleModalEmployeeId}/job-roles", selectedJobRoles.ToList());
+            if (response.IsSuccessStatusCode)
+            {
+                showJobRoleModal = false;
+                var result = await http.GetFromJsonAsync<List<EmployeeResponseDto>>("api/employees", JsonOptions);
+                if (result is not null) employees = result;
+            }
+            else
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                jobRoleError = $"Fejl ({response.StatusCode}): {body}";
+            }
+        }
+        catch (Exception ex) { jobRoleError = "Fejl: " + ex.Message; }
+        finally { isSavingJobRole = false; }
+    }
+
+    private static MarkupString RoleBadge(string role)
+    {
+        var (color, label) = role switch
+        {
+            "Admin"         => ("danger",  "Admin"),
+            "Vagtansvarlig" => ("warning", "Vagtansvarlig"),
+            _               => ("primary", "Plejepersonale")
+        };
+        return new MarkupString($"<span class=\"badge bg-{color}\">{label}</span>");
+    }
+
+    private static string RoleDescription(string role) => role switch
+    {
+        "Admin"         => " — Fuld adgang til alt",
+        "Vagtansvarlig" => " — Kan administrere vagter og ansatte",
+        _               => " — Kan se og redigere beboerdata"
     };
+
+    private static List<System.Security.Claims.Claim> ParseClaimsFromJwt(string jwt)
+    {
+        var payload = jwt.Split('.')[1];
+        var jsonBytes = ParseBase64WithoutPadding(payload);
+        var keyValuePairs = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonBytes);
+        return keyValuePairs?.Select(kvp => new System.Security.Claims.Claim(kvp.Key, kvp.Value.ToString()!)).ToList() ?? new();
+    }
+
+    private static byte[] ParseBase64WithoutPadding(string base64)
+    {
+        switch (base64.Length % 4)
+        {
+            case 2: base64 += "=="; break;
+            case 3: base64 += "="; break;
+        }
+        return Convert.FromBase64String(base64);
+    }
 }

@@ -409,6 +409,7 @@ obj/Debug/net9.0/SlottetBlazor.GeneratedMSBuildEditorConfig.editorconfig
 Components/
  App.razor
  Layout/
+  LoginHeader.razor
   MainLayout.razor
   NavMenu.razor
  Pages/
@@ -429,6 +430,7 @@ Components/
 Components/
  App.razor
  Layout/
+  LoginHeader.razor
   MainLayout.razor
   NavMenu.razor
  Pages/

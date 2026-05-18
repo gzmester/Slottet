@@ -140,6 +140,42 @@ namespace API.Controllers
             return Ok(MapToResponseDto(resident!));
         }
 
+        [HttpPost]
+        public async Task<ActionResult<ResidentResponseDto>> Create(ResidentCreateDto createDto)
+        {
+            var resident = new Resident
+            {
+                FirstName = createDto.FirstName,
+                LastName = createDto.LastName,
+                Room = createDto.Room,
+                ShoppingDay = createDto.ShoppingDay,
+                Payment = createDto.Payment,
+                LocationID = createDto.LocationID,
+                RiskLevel = createDto.RiskLevel,
+                Mood = createDto.Mood
+            };
+
+            _db.Residents.Add(resident);
+            await _db.SaveChangesAsync();
+
+            await _db.AuditLogs.AddAsync(new AuditLog
+            {
+                LogType  = "Activity",
+                Action   = "Borger oprettet",
+                Entity   = "Resident",
+                EntityId = resident.ResidentID.ToString(),
+                UserId   = null,
+                UserName = "unknown"
+            });
+            await _db.SaveChangesAsync();
+
+            //Hent lokation for at få navnet med i response
+            await _db.Entry(resident).Reference(r => r.Location).LoadAsync();
+            
+            return CreatedAtAction(nameof(GetById), new { id = resident.ResidentID }, MapToResponseDto(resident));
+
+        }
+
         private static ResidentResponseDto MapToResponseDto(Resident resident) => new ()
         {
             

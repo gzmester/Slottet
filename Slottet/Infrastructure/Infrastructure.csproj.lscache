@@ -59,11 +59,18 @@ Migrations/
  20260428090224_InitialCreate.Designer.cs
  20260508082123_AddAuditLog.cs
  20260508082123_AddAuditLog.Designer.cs
+ 20260518083636_RefactorAuthRoles.cs
+ 20260518083636_RefactorAuthRoles.Designer.cs
+ 20260518085540_RemovePinCodeColumn.cs
+ 20260518085540_RemovePinCodeColumn.Designer.cs
+ 20260518130150_ShiftDateToDateOnly.cs
+ 20260518130150_ShiftDateToDateOnly.Designer.cs
  ApplicationDbContextModelSnapshot.cs
 obj/Debug/net9.0/
  .NETCoreApp,Version=v9.0.AssemblyAttributes.cs
  Infrastructure.AssemblyInfo.cs
  Infrastructure.GlobalUsings.g.cs
+Seed/RoleSeeder.cs
 
 [metadataReferences]
 ../

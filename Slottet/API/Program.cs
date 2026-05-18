@@ -1,9 +1,11 @@
 using DotNetEnv;
 using Infrastructure.Data;
+using Infrastructure.Seed;
 using Microsoft.EntityFrameworkCore;
 
 using Domain.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -19,10 +21,23 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(
             new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
-/// ========================= Authentication & Identity Middleware Setup =========================
-// 1. Add Identity Services
-builder.Services.AddIdentity<Employee, Role>()
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+/// ========================= Authentication & Identity Setup =========================
+// 1. Add Identity Services (Employee = user, AppRole = access control role)
+builder.Services.AddIdentity<Employee, AppRole>(options =>
+{
+    // PinCode-baseret login – vi slår password-krav fra
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 1;
+
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.User.RequireUniqueEmail = true;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
 
 // 2. Add JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -41,6 +56,19 @@ builder.Services.AddAuthentication(options => {
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
     };
 });
+
+// 3. Add Authorization policies
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdmin", policy =>
+        policy.RequireRole("Admin"));
+
+    options.AddPolicy("RequireScheduler", policy =>
+        policy.RequireRole("Admin", "Vagtansvarlig"));
+
+    options.AddPolicy("RequireCareStaff", policy =>
+        policy.RequireRole("Admin", "Vagtansvarlig", "Plejepersonale"));
+});
 /// =============================================================================================
 
 // Build connection string: prefer env vars (Docker/CI), fall back to appsettings.json
@@ -57,15 +85,16 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("BlazorClient", policy =>
     {
-        policy.WithOrigins("http://localhost:5140", "https://localhost:7158", "http://localhost:5000")
+        policy.WithOrigins("http://localhost:5140", "https://localhost:7158", "http://localhost:5050")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
 var app = builder.Build();
 
-// Run migrations and optionally seed data on startup
+// Run migrations and seed data on startup
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -76,7 +105,8 @@ using (var scope = app.Services.CreateScope())
         logger.LogInformation("Applying database migrations...");
         await db.Database.MigrateAsync();
 
-
+        // Seed Identity roles (Admin, Vagtansvarlig, Plejepersonale)
+        await RoleSeeder.SeedAsync(scope.ServiceProvider);
     }
     catch (Exception ex)
     {
@@ -94,9 +124,10 @@ app.UseHttpsRedirection();
 
 app.UseCors("BlazorClient");
 
-//app.UseAuthentication();
-//app.UseAuthorization();
+// KRITISK: Authentication og Authorization middleware SKAL være i denne rækkefølge
+app.UseAuthentication();
+app.UseAuthorization();
 
-app.MapControllers();  // aktiver alle [ApiController] klasser
+app.MapControllers();
 
 app.Run();

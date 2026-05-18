@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @using Application.DTOs.Location
 @using Application.DTOs.Resident
+@using Domain.Enums
 @inject IHttpClientFactory HttpClientFactory
 
 <h1 class="mb-4">
@@ -27,7 +28,7 @@
         </div>
 
         <button class="btn btn-outline-secondary mt-3 w-100"
-                @onclick="OpenAddModal">
+                @onclick="OpenAddLocationModal">
             + Ny lokation
         </button>
 
@@ -89,6 +90,10 @@
                                         </tr>
                                     }
                                 </tbody>
+                                <button class=" btn btn-sm btn-outline-primary mt-2"
+                                        @onclick="OpenAddResidentModal">
+                                    Tilføj beboer
+                                </button>
                             </table>
                         </div>
                     }
@@ -107,7 +112,7 @@
 
 </div>
 
-@if (showModal)
+@if (showAddLocationModal)
 {
     <div class="modal d-block" tabindex="-1">
         <div class="modal-dialog">
@@ -144,16 +149,87 @@
     <div class="modal-backdrop fade show"></div>
 }
 
+@if (showAddResidentModal)
+{
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ny beboer</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Fornavn</label>
+                        <input type="text" maxlength="50" class="form-control" @bind="newResidentFirstName" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Efternavn</label>
+                        <input type="text" maxlength="50" class="form-control" @bind="newResidentLastName" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Værelse</label>
+                        <input type="text" maxlength="50" class="form-control" @bind="newResidentRoom" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Risikoklasse</label>
+                        <select class="form-control" @bind="newResidentRiskLevel">
+                            <option value="@RiskLevel.Green">Grøn</option>
+                            <option value="@RiskLevel.Yellow">Gul</option>
+                            <option value="@RiskLevel.Red">Rød</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Humør</label>
+                        <select class="form-control" @bind="newMood">
+                            <option value="@Mood.Happy">Glade</option>
+                            <option value="@Mood.Neutral">Neutral</option>
+                            <option value="@Mood.Sad">Triste</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Handle dag</label>
+                        <input type="text" maxlength="50" class="form-control" @bind="newShoppingDay" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Betaling</label>
+                        <input type="text" maxlength="50" class="form-control" @bind="newPayment" />
+                    </div>
+                    @if (saveError is not null)
+                    {
+                        <div class="alert alert-danger">@saveError</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Luk</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveResidentAsync">Gem</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @code {
     private List<LocationResponseDto> locations = new();
     private List<ResidentResponseDto> residents = new();
     private int? selectedLocationId;
 
-    private bool showModal = false;
+    private bool showAddLocationModal = false;
+    private bool showAddResidentModal = false;
     private string newName = string.Empty;
     private string newAddress = string.Empty;
     private int newZipCode;
     private string? saveError;
+
+    private string newResidentFirstName = string.Empty;
+    private string newResidentLastName = string.Empty;
+    private string newResidentRoom = string.Empty;
+    private RiskLevel newResidentRiskLevel = RiskLevel.Green;
+    private Mood newMood = Mood.Neutral;
+    private string newShoppingDay = string.Empty;
+    private string newPayment = string.Empty;
+    private int newResidentLocationId;
 
     private LocationResponseDto? SelectedLocation =>
         locations.FirstOrDefault(l => l.LocationID == selectedLocationId);
@@ -181,18 +257,34 @@
         selectedLocationId = locationId;
     }
 
-    private void OpenAddModal()
+    private void OpenAddLocationModal()
     {
         newName = string.Empty;
         newAddress = string.Empty;
         newZipCode = 0;
         saveError = null;
-        showModal = true;
+        showAddLocationModal = true;
     }
+
+    private void OpenAddResidentModal()
+    {
+        newResidentFirstName = string.Empty;
+        newResidentLastName = string.Empty;
+        newResidentRoom = string.Empty;
+        newResidentRiskLevel = RiskLevel.Green;
+        newMood = Mood.Neutral;
+        newShoppingDay = string.Empty;
+        newPayment = string.Empty;
+        newResidentLocationId = selectedLocationId ?? 0;
+        saveError = null;
+        showAddResidentModal = true;
+    }
+    
 
     private void CloseModal()
     {
-        showModal = false;
+        showAddLocationModal = false;
+        showAddResidentModal = false;
     }
 
     private async Task SaveLocationAsync()
@@ -220,6 +312,45 @@
             var created = await response.Content.ReadFromJsonAsync<LocationResponseDto>();
             if (created is not null)
                 locations.Add(created);
+            CloseModal();
+        }
+        else
+        {
+            saveError = $"Fejl ved oprettelse: {response.StatusCode}";
+        }
+    }
+
+    private async Task SaveResidentAsync()
+    {
+        saveError = null;
+
+        if (string.IsNullOrWhiteSpace(newResidentFirstName) || string.IsNullOrWhiteSpace(newResidentLastName) ||
+            string.IsNullOrWhiteSpace(newResidentRoom) || newResidentLocationId <= 0)
+        {
+            saveError = "Udfyld venligst alle felter.";
+            return;
+        }
+
+        var dto = new ResidentCreateDto
+        {
+            FirstName   = newResidentFirstName,
+            LastName    = newResidentLastName,
+            Room        = newResidentRoom,
+            RiskLevel   = newResidentRiskLevel,
+            Mood        = newMood,
+            ShoppingDay = newShoppingDay,
+            Payment     = newPayment,
+            LocationID  = newResidentLocationId
+        };
+
+        var http = HttpClientFactory.CreateClient("API");
+        var response = await http.PostAsJsonAsync("api/Resident", dto);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var created = await response.Content.ReadFromJsonAsync<ResidentResponseDto>();
+            if (created is not null)
+                residents.Add(created);
             CloseModal();
         }
         else

@@ -54,6 +54,7 @@ TemporaryDependencyNodeTargetIdentifier=net9.0
 
 [sourceFiles]
 Entities/
+ AppRole.cs
  AuditLog.cs
  Authorization.cs
  Employee.cs

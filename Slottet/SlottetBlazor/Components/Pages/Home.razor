@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @rendermode InteractiveServer
 @using Application.DTOs.Resident
 @using Application.DTOs.Location
@@ -46,6 +46,12 @@
     private List<LocationResponseDto> locations = new();
     private List<AuthorizationResponseDto> authorizations = new();
 
+    private int CurrentPage = 1;
+    private int ResidentsPerPage = 6;
+
+    private int TotalResidents => employees.Count;
+    private int TotalPages => TotalResidents > 0 ? (int)Math.Ceiling((double)TotalResidents / ResidentsPerPage) : 1;
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -67,15 +73,6 @@
             Debug.WriteLine(ex.Message);
         }
     }
-}
-
-
-@code {
-    private int CurrentPage = 1;
-    private int ResidentsPerPage = 6;
-
-    private int TotalResidents => employees.Count;
-    private int TotalPages => TotalResidents > 0 ? (int)Math.Ceiling((double)TotalResidents / ResidentsPerPage) : 1;
 
     private void GoToPage(int page)
     {

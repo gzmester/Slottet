@@ -62,6 +62,7 @@ Controllers/
  MedicinController.cs
  PhoneNumbersController.cs
  ResidentController.cs
+ ShiftsController.cs
 obj/Debug/net9.0/
  .NETCoreApp,Version=v9.0.AssemblyAttributes.cs
  API.AssemblyInfo.cs

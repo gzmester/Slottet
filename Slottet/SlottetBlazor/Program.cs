@@ -14,10 +14,17 @@ builder.Services.AddRazorComponents()
 // Add ProtectedBrowserStorage for secure token storage
 builder.Services.AddScoped<ProtectedLocalStorage>();
 
-// Add HttpClient for API communication
+// Add HttpClient for API communication - single registration via IHttpClientFactory
 builder.Services.AddHttpClient("API", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"]!);
+});
+
+// Register HttpClient that resolves via IHttpClientFactory (used by MainLayout & ApiAuthenticationStateProvider)
+builder.Services.AddScoped(sp =>
+{
+    var factory = sp.GetRequiredService<IHttpClientFactory>();
+    return factory.CreateClient("API");
 });
 
 // Shared JSON options with enum-as-string support (matches API serialization)
@@ -28,7 +35,6 @@ builder.Services.AddSingleton(new JsonSerializerOptions(JsonSerializerDefaults.W
 
 // Add custom authentication state provider
 builder.Services.AddScoped<AuthenticationStateProvider, ApiAuthenticationStateProvider>();
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"]!) });
 
 var app = builder.Build();
 
@@ -36,12 +42,11 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
-
+// NOTE: Do NOT use UseHttpsRedirection in development - it causes redirect issues
+// and the "Failed to determine the https port" warning which breaks Blazor SSR
 
 app.UseAntiforgery();
 
