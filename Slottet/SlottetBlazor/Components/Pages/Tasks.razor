@@ -1,7 +1,8 @@
 ﻿@page "/Tasks"
+@rendermode InteractiveServer
 
 <h1 class="mb-4 d-flex align-items-center">
-    <i class="bi bi-list-task me-3 text-warning" style="font-size: 38px;"></i>
+    <i class="bi bi-list-task me-3 text-primary" style="font-size: 38px;"></i>
     <span class="fw-bold">Opgaver</span>
 </h1>
 
@@ -12,9 +13,9 @@
 
         <div class="card shadow-sm border-0 rounded-4">
 
-            <div class="card-header bg-warning-subtle border-0 rounded-top-4 py-3">
+            <div class="card-header bg-white border-bottom rounded-top-4 py-3">
                 <h4 class="mb-0 fw-semibold">
-                    <i class="bi bi-person-check-fill me-2"></i>
+                    <i class="bi bi-person-check-fill me-2 text-primary"></i>
                     Særligt ansvarlige
                 </h4>
             </div>
@@ -35,16 +36,22 @@
                             <tr>
                                 <td>
                                     <input type="text"
-                                           class="form-control rounded-3"
+                                           class="form-control-plaintext fw-semibold px-2"
                                            placeholder="Opgave..."
                                            @bind="task.Title" />
                                 </td>
-
                                 <td>
-                                    <input type="text"
-                                           class="form-control rounded-3"
-                                           placeholder="Navn..."
-                                           @bind="task.Name" />
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="text"
+                                               class="form-control form-control-sm rounded-3"
+                                               placeholder="Navn..."
+                                               @bind="task.Name" />
+                                        <button class="btn btn-sm btn-outline-danger border-0"
+                                                @onclick="() => specialTasks.Remove(task)"
+                                                title="Fjern">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -53,15 +60,12 @@
 
             </div>
 
-            <!-- Knap under tabellen -->
             <div class="card-footer bg-white border-0 p-3">
-
-                <button class="btn btn-warning rounded-3 w-100"
+                <button class="btn btn-outline-primary rounded-3 w-100"
                         @onclick="AddSpecialTask">
                     <i class="bi bi-plus-lg me-2"></i>
                     Tilføj opgave
                 </button>
-
             </div>
 
         </div>
@@ -73,9 +77,9 @@
 
         <div class="card shadow-sm border-0 rounded-4">
 
-            <div class="card-header bg-warning-subtle border-0 rounded-top-4 py-3">
+            <div class="card-header bg-white border-bottom rounded-top-4 py-3">
                 <h4 class="mb-0 fw-semibold">
-                    <i class="bi bi-building-fill-check me-2"></i>
+                    <i class="bi bi-building-fill-check me-2 text-primary"></i>
                     Afdelingsopgaver
                 </h4>
             </div>
@@ -87,16 +91,21 @@
                     @foreach (var task in departmentTasks)
                     {
                         <div class="col-md-6">
-
-                            <div class="border rounded-4 p-3 bg-light shadow-sm">
-
+                            <div class="border rounded-3 p-3 bg-white shadow-sm d-flex align-items-center gap-2">
+                                <span class="badge bg-primary rounded-circle flex-shrink-0"
+                                      style="width: 28px; height: 28px; line-height: 20px; text-align: center;">
+                                    @(departmentTasks.IndexOf(task) + 1)
+                                </span>
                                 <input type="text"
-                                       class="form-control rounded-3"
+                                       class="form-control form-control-sm rounded-3"
                                        placeholder="Skriv opgave..."
                                        @bind="task.Name" />
-
+                                <button class="btn btn-sm btn-outline-danger border-0 flex-shrink-0"
+                                        @onclick="() => departmentTasks.Remove(task)"
+                                        title="Fjern">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
                             </div>
-
                         </div>
                     }
 
@@ -104,15 +113,12 @@
 
             </div>
 
-            <!-- Knap under rækkerne -->
             <div class="card-footer bg-white border-0 p-3">
-
-                <button class="btn btn-warning rounded-3 w-100"
+                <button class="btn btn-outline-primary rounded-3 w-100"
                         @onclick="AddDepartmentTask">
                     <i class="bi bi-plus-lg me-2"></i>
                     Tilføj opgave
                 </button>
-
             </div>
 
         </div>
@@ -123,10 +129,9 @@
 
 @code {
 
-    // Særligt ansvarlige
     private List<TaskItem> specialTasks = new()
     {
-        new TaskItem { Title = "Medicinan­svarlig" },
+        new TaskItem { Title = "Medicinansvarlig" },
         new TaskItem { Title = "Omsorgsperson" },
         new TaskItem { Title = "Frokost" },
         new TaskItem { Title = "Aftensmad" },
@@ -136,7 +141,6 @@
         new TaskItem { Title = "Oprydning på kontor tirsdag før kl.14:00" }
     };
 
-    // Afdelingsopgaver
     private List<TaskItem> departmentTasks = new()
     {
         new TaskItem { Name = "Fylde handsker op" },
@@ -145,13 +149,11 @@
         new TaskItem { Name = "Kontrollere lager" }
     };
 
-    // Tilføj særligt ansvarlig opgave
     private void AddSpecialTask()
     {
         specialTasks.Add(new TaskItem());
     }
 
-    // Tilføj afdelingsopgave
     private void AddDepartmentTask()
     {
         departmentTasks.Add(new TaskItem());
