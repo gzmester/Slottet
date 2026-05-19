@@ -2,11 +2,8 @@
 @rendermode InteractiveServer
 @using Application.DTOs.PhoneNumber
 @using System.Diagnostics
-@using Application.DTOs.Employee
-@using System.Net.Http.Headers
 
 @inject IHttpClientFactory HttpClientFactory
-@inject IJSRuntime JS
 
 <h1 class="mb-4">
     <i class="bi bi-telephone-fill me-2" style="font-size: 32px;"></i>
@@ -20,25 +17,12 @@
     </div>
 }
 
-<!-- Liste over telefonnumre og tildeling -->
-<!-- foreach loop som itererer over phoneNumbers listen med bootstrap som sørger for at navn og telefonnummer vises ved siden af hinanden -->
-@foreach(var phoneNumber in phoneNumbers)
-{
-    <div class="d-flex align-items-center gap-3 mb-2">
-        <span class="number" style="width: 48px">@phoneNumber.Number</span>
-        <select class="form-select flex-grow-1 rounded-pill" style="max-width: 400px" @bind="@phoneNumber.AssignedTo">
-            <option value="">Vælg medarbejder</option>
-            @foreach (var employee in employees)
-            {
-                <option value="@employee.Id">@employee.FirstName @employee.LastName</option>
-            }
-        </select>
-        @* todo: Wrap slet knap i AuthorizeView Roles="Admin" så det kun er admin der kan slette telefon nummer *@
-        <button class="btn btn-danger rounded-pill px-3 btn btn-sm" @onclick="() => DeletePhoneNumberAsync(phoneNumber )">Slet</button>
-        @* todo: Wrap rediger knap i AuthorizeView Roles="Admin" så det kun er admin der kan redigere telefon nummer *@
-        <button class="btn btn-secondary rounded-pill px-3 btn btn-sm" @onclick="() => EditPhoneNumberAsync(phoneNumber)">Rediger</button>
-        @* knap til at gemme tildeling af telefonnum,meret, så det hele tiden vises i listen indtil det ændres ved vagtskifte*@
-        <button class="btn btn-primary rounded-pill px-3 btn btn-sm" @onclick="() => SaveAssignmentAsync(phoneNumber)">Gem</button>
+<div class="card shadow-sm">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-semibold">Telefonnumre</h5>
+        <button class="btn btn-sm btn-outline-primary" @onclick="() => AddPhoneNumberAsync()">
+            <i class="bi bi-plus-lg me-1"></i> Tilføj nummer
+        </button>
     </div>
 
     <div class="card-body p-0">
@@ -57,16 +41,16 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var phoneNumber in phoneNumbers)
+                        @foreach (var phone in phoneNumbers)
                         {
-                            <tr class="@(selectedPhone?.Id == phoneNumber.Id ? "table-active" : "")"
+                            <tr class="@(selectedPhone?.Id == phone.Id ? "table-active" : "")"
                                 style="cursor: pointer;"
-                                @onclick="() => selectedPhone = phoneNumber">
-                                <td><strong>@phoneNumber.Number</strong></td>
+                                @onclick="() => selectedPhone = phone">
+                                <td><strong>@phone.Number</strong></td>
                                 <td @onclick:stopPropagation>
                                     <input type="text"
                                            class="form-control form-control-sm"
-                                           @bind="phoneNumber.AssignedTo"
+                                           @bind="phone.AssignedTo"
                                            placeholder="Angiv navn" />
                                 </td>
                             </tr>
@@ -85,7 +69,7 @@
             }
             else
             {
-                <span>Vælg et nummer i listen</span>
+                <span>Vaelg et nummer i listen</span>
             }
         </span>
         <div class="d-flex gap-2">
@@ -114,7 +98,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Tilføj nummer</h5>
+                    <h5 class="modal-title">Tilfoej nummer</h5>
                     <button type="button" class="btn-close" @onclick="() => CloseModal()" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -166,36 +150,16 @@
     private PhoneNumberResponseDto? editingPhone = null;
     private PhoneNumberResponseDto? selectedPhone = null;
     private List<PhoneNumberResponseDto> phoneNumbers = new List<PhoneNumberResponseDto>();
-    private List<EmployeeResponseDto> employees = new List<EmployeeResponseDto>();
 
-    
-    private async Task<HttpClient> GetAuthClientAsync()
-    {
-        var http = HttpClientFactory.CreateClient("API");
-        try
-        {
-            var token = await JS.InvokeAsync<string?>("localStorage.getItem", "authToken");
-            if (!string.IsNullOrEmpty(token))
-                http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        }
-        catch { }
-        return http;
-    }
-
-    //Metode der henter alle telefonnumre og medarbejdere fra API'et når siden indlæses, og gemmer dem i phoneNumbers listen og employees valgmulighederne
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var http = await GetAuthClientAsync();
+            var http = HttpClientFactory.CreateClient("API");
             var result = await http.GetFromJsonAsync<List<PhoneNumberResponseDto>>("api/phoneNumber");
-            var employeeResult = await http.GetFromJsonAsync<List<EmployeeResponseDto>>("api/employees");
 
-            if (result is not null) 
+            if (result is not null)
                 phoneNumbers = result;
-
-            if (employeeResult is not null)
-                employees = employeeResult;
         }
         catch (HttpRequestException ex)
         {
@@ -226,7 +190,7 @@
     private async Task SaveAssignmentAsync(PhoneNumberResponseDto phoneNumber)
     {
         saveError = false;
-        var http = await GetAuthClientAsync();
+        var http = HttpClientFactory.CreateClient("API");
         var response = await http.PatchAsJsonAsync($"api/phoneNumber/{phoneNumber.Id}/assignment", phoneNumber.AssignedTo);
 
         if (!response.IsSuccessStatusCode)
@@ -241,9 +205,9 @@
     private async Task ConfirmAddAsync()
     {
         saveError = false;
-         var http = await GetAuthClientAsync();
-         var dto = new PhoneNumberCreateDto { Number = newNumber};
-         var response = await http.PostAsJsonAsync("api/phoneNumber", dto);
+        var http = HttpClientFactory.CreateClient("API");
+        var dto = new PhoneNumberCreateDto { Number = newNumber };
+        var response = await http.PostAsJsonAsync("api/phoneNumber", dto);
 
         if (response.IsSuccessStatusCode)
         {
@@ -269,7 +233,7 @@
         saveError = false;
         if (editingPhone is null) return;
 
-        var http = await GetAuthClientAsync();
+        var http = HttpClientFactory.CreateClient("API");
         var dto = new PhoneNumberUpdateDto { Number = newNumber };
         var response = await http.PutAsJsonAsync($"api/phoneNumber/{editingPhone.Id}", dto);
 
@@ -289,7 +253,7 @@
     private async Task DeletePhoneNumberAsync(PhoneNumberResponseDto phoneNumber)
     {
         saveError = false;
-        var http = await GetAuthClientAsync();
+        var http = HttpClientFactory.CreateClient("API");
         var response = await http.DeleteAsync($"api/phoneNumber/{phoneNumber.Id}");
 
         if (response.IsSuccessStatusCode)
