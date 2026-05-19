@@ -2,8 +2,11 @@
 @rendermode InteractiveServer
 @using Application.DTOs.PhoneNumber
 @using System.Diagnostics
+@using Application.DTOs.Employee
+@using System.Net.Http.Headers
 
 @inject IHttpClientFactory HttpClientFactory
+@inject IJSRuntime JS
 
 
 
@@ -29,7 +32,13 @@
 {
     <div class="d-flex align-items-center gap-3 mb-2">
         <span class="number" style="width: 48px">@phoneNumber.Number</span>
-        <input type="text" style="max-width: 400px" class="flex-grow-1 rounded-pill bg-secondary bg-opacity-10 px-3 py-2" @bind="@phoneNumber.AssignedTo" placeholder="Angiv navn"/>
+        <select class="form-select flex-grow-1 rounded-pill" style="max-width: 400px" @bind="@phoneNumber.AssignedTo">
+            <option value="">Vælg medarbejder</option>
+            @foreach (var employee in employees)
+            {
+                <option value="@employee.Id">@employee.FirstName @employee.LastName</option>
+            }
+        </select>
         @* todo: Wrap slet knap i AuthorizeView Roles="Admin" så det kun er admin der kan slette telefon nummer *@
         <button class="btn btn-danger rounded-pill px-3 btn btn-sm" @onclick="() => DeletePhoneNumberAsync(phoneNumber )">Slet</button>
         @* todo: Wrap rediger knap i AuthorizeView Roles="Admin" så det kun er admin der kan redigere telefon nummer *@
@@ -112,17 +121,36 @@
     private string newNumber = string.Empty;
     private PhoneNumberResponseDto? editingPhone = null;
     private List<PhoneNumberResponseDto> phoneNumbers = new List<PhoneNumberResponseDto>();
+    private List<EmployeeResponseDto> employees = new List<EmployeeResponseDto>();
 
-    //Metode der henter alle telefonnumre fra API'et når siden indlæses, og gemmer dem i phoneNumbers listen
+    
+    private async Task<HttpClient> GetAuthClientAsync()
+    {
+        var http = HttpClientFactory.CreateClient("API");
+        try
+        {
+            var token = await JS.InvokeAsync<string?>("localStorage.getItem", "authToken");
+            if (!string.IsNullOrEmpty(token))
+                http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+        catch { }
+        return http;
+    }
+
+    //Metode der henter alle telefonnumre og medarbejdere fra API'et når siden indlæses, og gemmer dem i phoneNumbers listen og employees valgmulighederne
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var http = HttpClientFactory.CreateClient("API");
+            var http = await GetAuthClientAsync();
             var result = await http.GetFromJsonAsync<List<PhoneNumberResponseDto>>("api/phoneNumber");
-            
+            var employeeResult = await http.GetFromJsonAsync<List<EmployeeResponseDto>>("api/employees");
+
             if (result is not null) 
                 phoneNumbers = result;
+
+            if (employeeResult is not null)
+                employees = employeeResult;
         }
         catch (HttpRequestException ex)
         {
@@ -137,7 +165,7 @@
     private async Task SaveAssignmentAsync(PhoneNumberResponseDto phoneNumber)
     {
         saveError = false;
-        var http = HttpClientFactory.CreateClient("API");
+        var http = await GetAuthClientAsync();
         var response = await http.PatchAsJsonAsync($"api/phoneNumber/{phoneNumber.Id}/assignment", phoneNumber.AssignedTo);
         
         if (!response.IsSuccessStatusCode)
@@ -156,7 +184,7 @@
     private async Task ConfirmAddAsync()
     {
         saveError = false;
-         var http = HttpClientFactory.CreateClient("API");
+         var http = await GetAuthClientAsync();
          var dto = new PhoneNumberCreateDto { Number = newNumber};
          var response = await http.PostAsJsonAsync("api/phoneNumber", dto);
 
@@ -186,7 +214,7 @@
         saveError = false;
         if (editingPhone is null) return;
 
-        var http = HttpClientFactory.CreateClient("API");
+        var http = await GetAuthClientAsync();
         var dto = new PhoneNumberUpdateDto { Number = newNumber };
         var response = await http.PutAsJsonAsync($"api/phoneNumber/{editingPhone.Id}", dto);
         if (response.IsSuccessStatusCode)
@@ -206,7 +234,7 @@
     private async Task DeletePhoneNumberAsync(PhoneNumberResponseDto phoneNumber)
     {
         saveError = false;
-        var http = HttpClientFactory.CreateClient("API");
+        var http = await GetAuthClientAsync();
         var response = await http.DeleteAsync($"api/phoneNumber/{phoneNumber.Id}");
         
         if (response.IsSuccessStatusCode)
