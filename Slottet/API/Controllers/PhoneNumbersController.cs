@@ -100,7 +100,7 @@ public class PhoneNumberController : ControllerBase
 
     // PATCH /api/phonenumbers/{id}/assignment
     [HttpPatch("{id}/assignment")]
-    public async Task<ActionResult<PhoneNumberResponseDto>> UpdateAssignment(int id, [FromBody] string? assignedTo)
+    public async Task<ActionResult<PhoneNumberResponseDto>> UpdateAssignment(int id, [FromBody] int? assignedTo)
     {
         var phoneNumber = await _db.PhoneNumbers.FirstOrDefaultAsync(p => p.Id == id);
 

@@ -147,7 +147,6 @@ public class ApplicationDbContext : IdentityDbContext<Employee, AppRole, int>
             entity.ToTable("PhoneNumber");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Number).HasMaxLength(8).IsRequired();
-            entity.Property(e => e.AssignedTo).HasMaxLength(50);
         });
 
         // Shift (vagttyper: Day, Midday, Night)

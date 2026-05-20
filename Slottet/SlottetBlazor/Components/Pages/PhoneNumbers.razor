@@ -1,9 +1,12 @@
-@page "/PhoneNumbers"
+﻿@page "/PhoneNumbers"
 @rendermode InteractiveServer
 @using Application.DTOs.PhoneNumber
 @using System.Diagnostics
+@using Application.DTOs.Employee
+@using System.Net.Http.Headers
 
 @inject IHttpClientFactory HttpClientFactory
+@inject IJSRuntime JS
 
 <h1 class="mb-4">
     <i class="bi bi-telephone-fill me-2" style="font-size: 32px;"></i>
@@ -48,10 +51,13 @@
                                 @onclick="() => selectedPhone = phone">
                                 <td><strong>@phone.Number</strong></td>
                                 <td @onclick:stopPropagation>
-                                    <input type="text"
-                                           class="form-control form-control-sm"
-                                           @bind="phone.AssignedTo"
-                                           placeholder="Angiv navn" />
+                                    <select class="form-select form-select-sm" @bind="phone.AssignedTo">
+                                           <option value="">Vælg medarbejder</option>
+                                                @foreach (var employee in employees)
+                                                {
+                                                    <option value="@employee.Id">@employee.FirstName @employee.LastName</option>
+                                                }
+                                    </select>
                                 </td>
                             </tr>
                         }
@@ -142,6 +148,10 @@
     <div class="modal-backdrop fade show"></div>
 }
 
+<ErrorModal IsVisible="@showError"
+            ErrorMessage="@errorMessage"
+            OnClose="@(() => showError = false)" />
+
 @code {
     private bool saveError = false;
     private bool showAddModal = false;
@@ -150,16 +160,34 @@
     private PhoneNumberResponseDto? editingPhone = null;
     private PhoneNumberResponseDto? selectedPhone = null;
     private List<PhoneNumberResponseDto> phoneNumbers = new List<PhoneNumberResponseDto>();
+    private List<EmployeeResponseDto> employees = new List<EmployeeResponseDto>();
+
+    private async Task<HttpClient> GetAuthClientAsync()
+    {
+        var http = HttpClientFactory.CreateClient("API");
+        try
+        {
+            var token = await JS.InvokeAsync<string?>("localStorage.getItem", "authToken");
+            if (!string.IsNullOrEmpty(token))
+                http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+        catch { }
+        return http;
+    }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var http = HttpClientFactory.CreateClient("API");
+            var http = await GetAuthClientAsync();
             var result = await http.GetFromJsonAsync<List<PhoneNumberResponseDto>>("api/phoneNumber");
+            var employeeResult = await http.GetFromJsonAsync<List<EmployeeResponseDto>>("api/employees");
 
             if (result is not null)
                 phoneNumbers = result;
+
+            if (employeeResult is not null)
+                employees = employeeResult;
         }
         catch (HttpRequestException ex)
         {
@@ -190,7 +218,7 @@
     private async Task SaveAssignmentAsync(PhoneNumberResponseDto phoneNumber)
     {
         saveError = false;
-        var http = HttpClientFactory.CreateClient("API");
+        var http = await GetAuthClientAsync();
         var response = await http.PatchAsJsonAsync($"api/phoneNumber/{phoneNumber.Id}/assignment", phoneNumber.AssignedTo);
 
         if (!response.IsSuccessStatusCode)
@@ -205,7 +233,7 @@
     private async Task ConfirmAddAsync()
     {
         saveError = false;
-        var http = HttpClientFactory.CreateClient("API");
+        var http = await GetAuthClientAsync();
         var dto = new PhoneNumberCreateDto { Number = newNumber };
         var response = await http.PostAsJsonAsync("api/phoneNumber", dto);
 
@@ -233,7 +261,7 @@
         saveError = false;
         if (editingPhone is null) return;
 
-        var http = HttpClientFactory.CreateClient("API");
+        var http = await GetAuthClientAsync();
         var dto = new PhoneNumberUpdateDto { Number = newNumber };
         var response = await http.PutAsJsonAsync($"api/phoneNumber/{editingPhone.Id}", dto);
 
@@ -253,7 +281,7 @@
     private async Task DeletePhoneNumberAsync(PhoneNumberResponseDto phoneNumber)
     {
         saveError = false;
-        var http = HttpClientFactory.CreateClient("API");
+        var http = await GetAuthClientAsync();
         var response = await http.DeleteAsync($"api/phoneNumber/{phoneNumber.Id}");
 
         if (response.IsSuccessStatusCode)
@@ -273,12 +301,11 @@
         showAddModal = false;
         showEditModal = false;
     }
-}
 
-<ErrorModal IsVisible="@showError"
-            ErrorMessage="@errorMessage"
-            OnClose="@(() => showError = false)" />
-@code {
+
     private bool showError = false;
     private string? errorMessage;
 }
+
+
+
