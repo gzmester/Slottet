@@ -4,53 +4,98 @@
 @using Application.DTOs.Location
 @using Application.DTOs.Authorization
 @using System.Text.Json
+@using System.Net.Http.Headers
 @inject IHttpClientFactory HttpClientFactory
+@inject IJSRuntime JS
 @inject JsonSerializerOptions JsonOptions
+@inject SlottetBlazor.Services.AuthStateService AuthState
+@implements IDisposable
 
 <PageTitle>Home</PageTitle>
 
-<div class="residents-container">
-    <div class="residents-grid">
+<div class="container-fluid px-3 py-2">
+    <div class="row g-3">
         @for (int i = 0; i < ResidentsPerPage && (CurrentPage - 1) * ResidentsPerPage + i < employees.Count; i++)
         {
             var resident = employees[(CurrentPage - 1) * ResidentsPerPage + i];
-            <ResidentCard 
-                ResidentID="@resident.ResidentID"
-                FirstName="@resident.FirstName"
-                LastName="@resident.LastName"
-                Room="@resident.Room"
-                RiskLevel="@resident.RiskLevel"
-                Mood="@resident.Mood"
-                ShoppingDay="@resident.ShoppingDay"
-                Payment="@resident.Payment"
-                Medicins="@resident.Medicins"
-                PNMedicins="@resident.PNMedicins"
-                Statuses="@resident.Statuses" />
+            <div class="col-12 col-md-6 col-xl-4">
+                <ResidentCard 
+                    ResidentID="@resident.ResidentID"
+                    FirstName="@resident.FirstName"
+                    LastName="@resident.LastName"
+                    Room="@resident.Room"
+                    RiskLevel="@resident.RiskLevel"
+                    Mood="@resident.Mood"
+                    ShoppingDay="@resident.ShoppingDay"
+                    Payment="@resident.Payment"
+                    Medicins="@resident.Medicins"
+                    PNMedicins="@resident.PNMedicins"
+                    Statuses="@resident.Statuses"
+                    IsLoggedIn="@isLoggedIn" />
+            </div>
         }
     </div>
 
-    <div class="pagination">
-        @for (int page = 1; page <= TotalPages; page++)
-        {
-            var pageNum = page;
-            <button class="page-button @(CurrentPage == pageNum ? "active" : "")"
-                    @onclick="@( () => GoToPage(pageNum) )">
-                @pageNum
-            </button>
-        }
-    </div>
+    @if (TotalPages > 1)
+    {
+        <nav class="d-flex justify-content-center mt-3">
+            <ul class="pagination">
+                @for (int page = 1; page <= TotalPages; page++)
+                {
+                    var pageNum = page;
+                    <li class="page-item @(CurrentPage == pageNum ? "active" : "")">
+                        <button class="page-link" @onclick="@(() => GoToPage(pageNum))">@pageNum</button>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
 </div>
 
 @code {
     private List<ResidentResponseDto> employees = new();
     private List<LocationResponseDto> locations = new();
     private List<AuthorizationResponseDto> authorizations = new();
+    private bool isLoggedIn = false;
 
     private int CurrentPage = 1;
     private int ResidentsPerPage = 6;
 
     private int TotalResidents => employees.Count;
     private int TotalPages => TotalResidents > 0 ? (int)Math.Ceiling((double)TotalResidents / ResidentsPerPage) : 1;
+
+    protected override void OnInitialized()
+    {
+        isLoggedIn = AuthState.IsLoggedIn;
+        AuthState.OnAuthChanged += OnAuthChanged;
+    }
+
+    private void OnAuthChanged()
+    {
+        isLoggedIn = AuthState.IsLoggedIn;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnAuthChanged -= OnAuthChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var token = await JS.InvokeAsync<string?>("localStorage.getItem", "authToken");
+                if (!string.IsNullOrEmpty(token))
+                {
+                    AuthState.SetLoggedIn(true);
+                }
+            }
+            catch { }
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {

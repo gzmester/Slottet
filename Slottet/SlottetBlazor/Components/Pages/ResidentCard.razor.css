@@ -1,8 +1,28 @@
 .resident-card-container {
     background-color: rgb(248, 248, 248); 
     border-radius: 15px; 
-    padding: 0px; 
+    padding: 0px;
+    overflow: hidden;
+    min-width: 0;
     box-shadow: 0 2px 4px rgba(20, 20, 20, 0.5);
+}
+
+.resident-card-container.card-readonly input:not([type="checkbox"]),
+.resident-card-container.card-readonly textarea,
+.resident-card-container.card-readonly select {
+    pointer-events: none;
+    background-color: transparent;
+    border-color: transparent;
+    color: inherit;
+    cursor: default;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.resident-card-container.card-readonly input[type="checkbox"] {
+    pointer-events: none;
+    cursor: default;
+    opacity: 0.7;
 }
 
 .status-entry {
@@ -16,7 +36,9 @@
 .flex-container {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
+    min-width: 0;
+    overflow: hidden;
 }
 
 
@@ -54,6 +76,7 @@ th.risk-high { background-color: #e62626; border-color: #e62626; }
 .resident-middle-table {
     width: 100%;
     margin-bottom: -2px;
+    table-layout: fixed;
 
     border-collapse: separate;
     border-spacing: 0;
@@ -62,8 +85,16 @@ th.risk-high { background-color: #e62626; border-color: #e62626; }
     overflow: hidden;
 }
 .resident-middle-table td {
-    padding: 6px 6px 0px 6px;
+    padding: 6px 4px 0px 4px;
     text-align: left;
+    overflow: hidden;
+    min-width: 0;
+}
+.resident-middle-table td:first-child {
+    width: 52px;
+    white-space: nowrap;
+    font-weight: 500;
+    font-size: 13px;
 }
 
 
@@ -90,12 +121,21 @@ th.risk-high { background-color: #e62626; border-color: #e62626; }
 /* inputs */
 .table-input {
     width: 100%;
-    padding: 5px;
+    min-width: 0;
+    padding: 4px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    font-size: 14px;
+    font-size: 13px;
     vertical-align: center;
     margin: 0px 0px 1px 0px;
+    box-sizing: border-box;
+}
+/* Medicin-tid input: sæt fast lille bredde */
+input[type="time"].table-input {
+    min-width: 0;
+    width: 100%;
+    font-size: 12px;
+    padding: 3px 2px;
 }
 .table-input::placeholder {
     color: #999;
@@ -103,8 +143,9 @@ th.risk-high { background-color: #e62626; border-color: #e62626; }
 }
 
 .checkbox-input {
-    height: 30px;
-    width: 30px;
+    height: 22px;
+    width: 22px;
+    flex-shrink: 0;
     vertical-align: middle;
 }
 

@@ -37,6 +37,32 @@ namespace API.Controllers
             return Ok(result);
         }
 
+        // GDPR-venligt public endpoint til storskærm — ingen personhenførbare data
+        [HttpGet("public")]
+        public async Task<ActionResult<IEnumerable<ResidentPublicDto>>> GetPublic([FromQuery] int? locationId)
+        {
+            var query = _db.Residents
+                .Include(r => r.Medicins)
+                .AsQueryable();
+
+            if (locationId.HasValue)
+                query = query.Where(r => r.LocationID == locationId.Value);
+
+            var residents = await query.ToListAsync();
+
+            var result = residents.Select(r => new ResidentPublicDto
+            {
+                ResidentID       = r.ResidentID,
+                LocationID       = r.LocationID,
+                RiskLevel        = r.RiskLevel.ToString(),
+                Mood             = r.Mood.ToString(),
+                MedicinCount     = r.Medicins.Count,
+                MedicinTakenCount = r.Medicins.Count(m => m.IsTaken)
+            });
+
+            return Ok(result);
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<ResidentResponseDto>> GetById(int id)
         {

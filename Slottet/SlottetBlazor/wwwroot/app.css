@@ -59,7 +59,7 @@ h1:focus {
     text-align: start;
 }
 
-/* Vi tvinger farverne igennem p� dine eksisterende klassenavne */
+/* Vi tvinger farverne igennem p� dine eksisterende klassenavne */
 .badge-risk-low {
     background-color: #28a745 !important;
 }
@@ -70,4 +70,13 @@ h1:focus {
 
 .badge-risk-high {
     background-color: #dc3545 !important;
+}
+
+/* ── Storskærm: fjern al normal layout-styling ── */
+.display-layout {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    overflow-y: auto;
+    background: #1a1a2e;
 }

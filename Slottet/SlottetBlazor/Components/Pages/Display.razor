@@ -1,0 +1,194 @@
+@page "/display"
+@page "/display/{LocationId:int}"
+@layout SlottetBlazor.Components.Layout.DisplayLayout
+@rendermode InteractiveServer
+@using Application.DTOs.Resident
+@using Application.DTOs.Location
+@using System.Text.Json
+@implements IDisposable
+@inject IHttpClientFactory HttpClientFactory
+@inject JsonSerializerOptions JsonOptions
+
+<PageTitle>Storskærm — @locationName</PageTitle>
+
+<div class="display-page">
+
+    <header class="display-header">
+        <div class="display-header-left">
+            <img src="images/icons/slottet-logo.svg" class="display-logo" onerror="this.style.display='none'" />
+            <div class="display-location-selector">
+                <span class="display-location-label">Afdeling:</span>
+                <div class="display-tabs">
+                    @foreach (var loc in locations)
+                    {
+                        <button class="display-tab @(selectedLocationId == loc.LocationID ? "active" : "")"
+                                @onclick="() => SelectLocation(loc.LocationID)">
+                            @loc.Name
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="display-header-right">
+            <span class="display-clock">@currentTime</span>
+            <span class="display-date">@currentDate</span>
+        </div>
+    </header>
+
+    @if (isLoading)
+    {
+        <div class="display-loading">
+            <div class="spinner-border text-light" role="status"></div>
+        </div>
+    }
+    else if (residents.Count == 0)
+    {
+        <div class="display-empty">
+            <p>Ingen beboere registreret på @locationName</p>
+        </div>
+    }
+    else
+    {
+        <div class="display-grid">
+            @foreach (var r in residents)
+            {
+                <div class="display-card">
+                    <div class="display-card-header @GetRiskClass(r.RiskLevel)">
+                        <span class="display-card-icon">👤</span>
+                        <span class="display-risk-badge">@GetRiskLabel(r.RiskLevel)</span>
+                    </div>
+                    <div class="display-card-body">
+                        <div class="display-mood">
+                            <span class="display-mood-label">Humør</span>
+                            <span class="display-mood-icon">@GetMoodIcon(r.Mood)</span>
+                        </div>
+                        <div class="display-medicin">
+                            <span class="display-medicin-label">Medicin</span>
+                            <div class="display-medicin-progress">
+                                @for (int i = 0; i < r.MedicinCount; i++)
+                                {
+                                    var taken = i < r.MedicinTakenCount;
+                                    <span class="display-medicin-dot @(taken ? "taken" : "pending")"></span>
+                                }
+                                @if (r.MedicinCount == 0)
+                                {
+                                    <span class="text-muted small">Ingen</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int? LocationId { get; set; }
+
+    private List<ResidentPublicDto> residents = new();
+    private List<LocationResponseDto> locations = new();
+    private bool isLoading = true;
+    private string locationName = "Storskærm";
+    private int selectedLocationId = 0;
+
+    private string currentTime = "";
+    private string currentDate = "";
+    private System.Threading.Timer? _clockTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        UpdateClock();
+        _clockTimer = new System.Threading.Timer(_ =>
+        {
+            UpdateClock();
+            InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+
+        await LoadLocations();
+
+        if (LocationId.HasValue && LocationId.Value > 0)
+            selectedLocationId = LocationId.Value;
+        else if (locations.Count > 0)
+            selectedLocationId = locations[0].LocationID;
+
+        await LoadResidents();
+    }
+
+    private void UpdateClock()
+    {
+        var now = DateTime.Now;
+        currentTime = now.ToString("HH:mm");
+        currentDate = now.ToString("dddd d. MMMM", new System.Globalization.CultureInfo("da-DK"));
+    }
+
+    private async Task LoadLocations()
+    {
+        try
+        {
+            var http = HttpClientFactory.CreateClient("API");
+            var result = await http.GetFromJsonAsync<List<LocationResponseDto>>("api/locations", JsonOptions);
+            if (result is not null) locations = result;
+        }
+        catch { }
+    }
+
+    private async Task LoadResidents()
+    {
+        isLoading = true;
+        try
+        {
+            var http = HttpClientFactory.CreateClient("API");
+            var url = selectedLocationId > 0
+                ? $"api/resident/public?locationId={selectedLocationId}"
+                : "api/resident/public";
+
+            var result = await http.GetFromJsonAsync<List<ResidentPublicDto>>(url, JsonOptions);
+            if (result is not null) residents = result;
+
+            var loc = locations.FirstOrDefault(l => l.LocationID == selectedLocationId);
+            locationName = loc?.Name ?? "Storskærm";
+        }
+        catch { }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SelectLocation(int id)
+    {
+        selectedLocationId = id;
+        await LoadResidents();
+    }
+
+    private static string GetRiskClass(string risk) => risk switch
+    {
+        "Green"  => "risk-low",
+        "Yellow" => "risk-medium",
+        "Red"    => "risk-high",
+        _        => "risk-none"
+    };
+
+    private static string GetRiskLabel(string risk) => risk switch
+    {
+        "Green"  => "Lav risiko",
+        "Yellow" => "Medium risiko",
+        "Red"    => "Høj risiko",
+        _        => "Ukendt"
+    };
+
+    private static string GetMoodIcon(string mood) => mood switch
+    {
+        "Happy"   => "🙂",
+        "Sad"     => "🙁",
+        "Neutral" => "😑",
+        _         => "😑"
+    };
+
+    public void Dispose()
+    {
+        _clockTimer?.Dispose();
+    }
+}

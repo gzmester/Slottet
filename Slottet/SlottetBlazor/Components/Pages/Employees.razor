@@ -7,6 +7,7 @@
 @inject IHttpClientFactory HttpClientFactory
 @inject IJSRuntime JS
 @inject JsonSerializerOptions JsonOptions
+@inject SlottetBlazor.Services.AuthStateService AuthState
 
 <h1>
     <img src="images/icons/Employee.svg" style="width: 32px; height: 32px;" />
@@ -279,30 +280,46 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        // Data hentes i OnAfterRenderAsync når JS interop er klar
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        string? token = null;
         try
         {
-            var token = await JS.InvokeAsync<string?>("localStorage.getItem", "authToken");
+            token = await JS.InvokeAsync<string?>("localStorage.getItem", "authToken");
             if (!string.IsNullOrEmpty(token))
             {
                 var claims = ParseClaimsFromJwt(token);
                 isAdmin = claims.Any(c => c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role" && c.Value == "Admin");
+                AuthState.SetLoggedIn(true);
             }
         }
         catch { }
 
         isLoading = true;
         loadError = null;
+        StateHasChanged();
         try
         {
-            var http = await GetAuthClientAsync();
+            var http = HttpClientFactory.CreateClient("API");
+            if (!string.IsNullOrEmpty(token))
+                http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
             var empTask = http.GetFromJsonAsync<List<EmployeeResponseDto>>("api/employees", JsonOptions);
             var locTask = http.GetFromJsonAsync<List<LocationResponseDto>>("api/locations", JsonOptions);
-            var jrTask = http.GetFromJsonAsync<List<System.Text.Json.JsonElement>>("api/employees/job-roles");
+            var jrTask  = http.GetFromJsonAsync<List<System.Text.Json.JsonElement>>("api/employees/job-roles");
             await Task.WhenAll(empTask, locTask, jrTask);
-            if (empTask.Result is not null) employees = empTask.Result;
-            if (locTask.Result is not null) locations = locTask.Result;
-            if (jrTask.Result is not null)
-                availableJobRoles = jrTask.Result.Select(j => j.GetProperty("name").GetString() ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList();
+            if (empTask.Result is not null) employees      = empTask.Result;
+            if (locTask.Result is not null) locations      = locTask.Result;
+            if (jrTask.Result  is not null)
+                availableJobRoles = jrTask.Result
+                    .Select(j => j.GetProperty("name").GetString() ?? "")
+                    .Where(n => !string.IsNullOrEmpty(n))
+                    .ToList();
         }
         catch (HttpRequestException ex)
         {
@@ -311,6 +328,7 @@ else
         finally
         {
             isLoading = false;
+            StateHasChanged();
         }
     }
 

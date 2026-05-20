@@ -1,0 +1,207 @@
+/* ── Overordnet layout ── */
+.display-layout,
+.display-page {
+    min-height: 100vh;
+    background: #1a1a2e;
+    color: #eee;
+    font-family: 'Segoe UI', sans-serif;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Header ── */
+.display-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: #16213e;
+    border-bottom: 2px solid #0f3460;
+    flex-shrink: 0;
+}
+
+.display-header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.display-location-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.display-location-label {
+    font-size: 1rem;
+    color: #a0aec0;
+    white-space: nowrap;
+}
+
+.display-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.display-header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.1rem;
+}
+
+.display-clock {
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: #90cdf4;
+    line-height: 1;
+}
+
+.display-date {
+    font-size: 1rem;
+    color: #a0aec0;
+    text-transform: capitalize;
+}
+
+/* ── Lokations-tabs i header ── */
+.display-location-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.display-location-label {
+    font-size: 1rem;
+    color: #a0aec0;
+    white-space: nowrap;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.display-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* ── Beboer-grid ── */
+.display-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.25rem;
+    padding: 1.5rem 2rem;
+    flex: 1;
+    align-content: start;
+}
+
+/* ── Beboerkort ── */
+.display-card {
+    background: #16213e;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s;
+}
+
+.display-card:hover {
+    transform: translateY(-2px);
+}
+
+.display-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    font-size: 1.5rem;
+}
+
+.display-card-header.risk-low    { background: #276749; }
+.display-card-header.risk-medium { background: #975a16; }
+.display-card-header.risk-high   { background: #9b2c2c; }
+.display-card-header.risk-none   { background: #2d3748; }
+
+.display-risk-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(0,0,0,0.25);
+    color: #fff;
+}
+
+.display-card-body {
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+/* ── Humør ── */
+.display-mood {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.display-mood-label {
+    font-size: 0.8rem;
+    color: #a0aec0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.display-mood-icon {
+    font-size: 1.8rem;
+    line-height: 1;
+}
+
+/* ── Medicin prikker ── */
+.display-medicin {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.display-medicin-label {
+    font-size: 0.8rem;
+    color: #a0aec0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.display-medicin-progress {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.display-medicin-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.display-medicin-dot.taken   { background: #48bb78; }
+.display-medicin-dot.pending { background: #4a5568; border: 2px solid #718096; }
+
+/* ── Loading / tom ── */
+.display-loading,
+.display-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #a0aec0;
+}

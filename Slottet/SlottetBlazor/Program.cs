@@ -35,6 +35,7 @@ builder.Services.AddSingleton(new JsonSerializerOptions(JsonSerializerDefaults.W
 
 // Add custom authentication state provider
 builder.Services.AddScoped<AuthenticationStateProvider, ApiAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthStateService>();
 
 var app = builder.Build();
 

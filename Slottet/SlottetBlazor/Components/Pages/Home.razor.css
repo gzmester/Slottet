@@ -1,40 +1,9 @@
-.residents-container {
+/* Sørg for at kort strækker sig til fuld kolonhøjde */
+[class*="col-"] {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
-    padding: 0;
 }
 
-.residents-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-}
-
-.pagination {
-    display: flex;
-    justify-content: center;
-    margin-top: auto;
-    gap: 1rem;
-}
-
-.page-button {
-    padding: 0.5rem 1rem;
-    border: 2px solid #ccc;
-    background-color: white;
-    color: #333;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.page-button:hover {
-    border-color: #333;
-}
-
-.page-button.active {
-    background-color: #333;
-    color: white;
-    border-color: #333;
+[class*="col-"] > .resident-card-container {
+    flex: 1;
 }

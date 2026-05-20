@@ -7,6 +7,7 @@
 
 @inject IHttpClientFactory HttpClientFactory
 @inject IJSRuntime JS
+@inject SlottetBlazor.Services.AuthStateService AuthState
 
 <div class="header-right">
     @if (isLoggedIn)
@@ -192,6 +193,7 @@
                     isAdmin = claims.Any(c => c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role" && c.Value == "Admin");
                     isVagtansvarlig = claims.Any(c => c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role" && c.Value == "Vagtansvarlig");
                     userDisplayName = employeeName ?? claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value ?? "Bruger";
+                    AuthState.SetLoggedIn(true);
 
                     // Læs ShiftType fra JWT
                     var shiftClaim = claims.FirstOrDefault(c => c.Type == "ShiftType");
@@ -309,6 +311,7 @@
         selectedShiftType = null;
         loginEmail = "";
         pincode = "";
+        AuthState.SetLoggedIn(false);
     }
 
     private async Task OnPincodeKeyUp(KeyboardEventArgs e)

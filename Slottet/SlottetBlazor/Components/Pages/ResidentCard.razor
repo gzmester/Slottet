@@ -1,6 +1,6 @@
 ﻿@using Application.DTOs.Resident
 @inject IHttpClientFactory HttpClientFactory
-<div class="resident-card-container">
+<div class="resident-card-container @(!IsLoggedIn ? "card-readonly" : "")">
     <table class="resident-header-table">
         <tr>
             <th class="@GetRiskClass()">@FirstName @LastName</th>
@@ -8,7 +8,7 @@
         </tr>
         <tr>
             <td>
-                <select class="dropdown-risk-input @GetRiskClass()" @onchange="OnRiskLevelChange">
+                <select class="dropdown-risk-input @GetRiskClass()" @onchange="OnRiskLevelChange" disabled="@(!IsLoggedIn)">
                     <option value=""> Risiko </option>
                     <option value="Green" selected="@(RiskLevel == "Green")">Lav Risiko</option>
                     <option value="Yellow" selected="@(RiskLevel == "Yellow")">Medium Risiko</option>
@@ -16,7 +16,7 @@
                 </select>
             </td>
             <td>
-                <select class="dropdown-mood-input" value="@Mood" @onchange="OnMoodChange">
+                <select class="dropdown-mood-input" value="@Mood" @onchange="OnMoodChange" disabled="@(!IsLoggedIn)">
                     <option value="">Humør </option>
                     <option value="Sad">Trist 🙁</option>
                     <option value="Neutral">Neutral 😑</option>
@@ -37,8 +37,8 @@
                     <div class="flex-container">
                         @if (med != null)
                         {
-                            <input type="time" class="table-input" value="@med.Time.ToString("HH:mm")" @onchange="(ChangeEventArgs e) => OnTimeInputChange(med, e)" />
-                            <input type="checkbox" class="checkbox-input" checked="@med.IsTaken" @onchange="() => ToggleIsTakenAsync(med)" />
+                            <input type="time" class="table-input" value="@med.Time.ToString("HH:mm")" @onchange="(ChangeEventArgs e) => OnTimeInputChange(med, e)" disabled="@(!IsLoggedIn)" />
+                            <input type="checkbox" class="checkbox-input" checked="@med.IsTaken" @onchange="() => ToggleIsTakenAsync(med)" disabled="@(!IsLoggedIn)" />
                         }
                         else
                         {
@@ -52,17 +52,17 @@
         <tr>
             <td>PN-tid</td>
 
-                <td><textarea class="table-input" rows="1"></textarea>
-                    <input type="time" class="table-input" /></td>
+                <td><textarea class="table-input" rows="1" disabled="@(!IsLoggedIn)"></textarea>
+                    <input type="time" class="table-input" disabled="@(!IsLoggedIn)" /></td>
                 
-                <td><textarea class="table-input" rows="1"></textarea>
-                    <input type="time" class="table-input" /></td>
+                <td><textarea class="table-input" rows="1" disabled="@(!IsLoggedIn)"></textarea>
+                    <input type="time" class="table-input" disabled="@(!IsLoggedIn)" /></td>
                 
-                <td><textarea class="table-input" rows="1"></textarea>
-                    <input type="time" class="table-input" /></td>
+                <td><textarea class="table-input" rows="1" disabled="@(!IsLoggedIn)"></textarea>
+                    <input type="time" class="table-input" disabled="@(!IsLoggedIn)" /></td>
                 
-                <td><textarea class="table-input" rows="1"></textarea>
-                    <input type="time" class="table-input" /></td>
+                <td><textarea class="table-input" rows="1" disabled="@(!IsLoggedIn)"></textarea>
+                    <input type="time" class="table-input" disabled="@(!IsLoggedIn)" /></td>
 
         </tr>
     </table>
@@ -72,11 +72,11 @@
     <table class="resident-bottom-table">
         <tr>
             <td class="text-nowrap" style="width: 1%;"><strong>HandleDag</strong></td>
-            <td><input type="text" class="table-input" @bind="ShoppingDay" @bind:event="oninput" @onchange="SaveChanges" placeholder="eks. Torsdag formiddag, Handler ofte selv"/></td>
+            <td><input type="text" class="table-input" @bind="ShoppingDay" @bind:event="oninput" @onchange="SaveChanges" placeholder="eks. Torsdag formiddag, Handler ofte selv" disabled="@(!IsLoggedIn)"/></td>
         </tr>
         <tr>
             <td class="text-nowrap" style="width: 1%;"><strong>Betaling</strong></td>
-            <td><input type="text" class="table-input" @bind="Payment" @bind:event="oninput" @onchange="SaveChanges" placeholder="eks. Eget kort, Kontant fra kontor: 400,-"/></td>
+            <td><input type="text" class="table-input" @bind="Payment" @bind:event="oninput" @onchange="SaveChanges" placeholder="eks. Eget kort, Kontant fra kontor: 400,-" disabled="@(!IsLoggedIn)"/></td>
         </tr>
         <tr>
             <td class="text-nowrap" style="width: 1%; vertical-align: top;">
@@ -93,7 +93,7 @@
             
             <td>
 
-                <textarea rows="1" maxlength="200" class="table-input" @bind="Status" @bind:event="oninput" @onchange="SaveChanges" placeholder="Tilføj status... (max 200 tegn)"></textarea>
+                <textarea rows="1" maxlength="200" class="table-input" @bind="Status" @bind:event="oninput" @onchange="SaveChanges" placeholder="Tilføj status... (max 200 tegn)" disabled="@(!IsLoggedIn)"></textarea>
 
                 @foreach (var s in _displayStatuses.Take(1))
                 {
@@ -136,6 +136,9 @@
 @code {
     [Parameter]
     public int ResidentID { get; set; }
+
+    [Parameter]
+    public bool IsLoggedIn { get; set; } = false;
 
     [Parameter]
     public string FirstName { get; set; } = string.Empty;

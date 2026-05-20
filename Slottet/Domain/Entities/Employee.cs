@@ -20,6 +20,6 @@ public class Employee : IdentityUser<int>
     // Many-to-many: Ansvarsområder (job descriptions) via EmployeeRole join table
     public ICollection<Role> Roles { get; set; } = new List<Role>();
 
-    // One-to-many: Vagter
+    // One-to-many: Vagter // but only on a specific day, 1 shift for 1 day, but many shifts throughout the year
     public ICollection<Shift> Shifts { get; set; } = new List<Shift>();
 }
