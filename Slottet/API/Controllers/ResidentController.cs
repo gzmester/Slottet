@@ -222,6 +222,12 @@ namespace API.Controllers
                 Time      = m.Time,
                 IsTaken   = m.IsTaken
             }).ToList(),
+            PNMedicins = resident.PNMedicins.Select(pn => new PNMedicinResponseDto
+            {
+                PNMedicinID = pn.PNMedicinID,
+                Type        = pn.Type,
+                Time        = pn.Time
+            }).ToList(),
             Statuses = resident.Statuses
                 .Where(s => s.Time.Date == DateTime.Today)
                 .OrderByDescending(s => s.Time)

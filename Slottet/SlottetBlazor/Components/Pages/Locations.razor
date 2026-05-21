@@ -94,6 +94,9 @@
                                         @onclick="OpenAddResidentModal">
                                     Tilføj beboer
                                 </button>
+                                <button class="btn btn-sm btn-outline-primary mt-2" @onclick="OpenAddMedicinModal">
+                                    Tilføj medicin
+                                </button>
                             </table>
                         </div>
                     }
@@ -210,6 +213,45 @@
     <div class="modal-backdrop fade show"></div>
 }
 
+@if (showAddMedicinModal)
+{
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ny medicin</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Beboer</label>
+                        <select class="form-control" @bind="selectedResidentId">
+                            <option value="">Vælg beboer</option>
+                            @foreach (var resident in residents.Where(r => r.LocationID == selectedLocationId))
+                            {
+                                <option value="@resident.ResidentID">@resident.FirstName @resident.LastName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Type</label>
+                        <input type="text" maxlength="50" class="form-control" @bind="newMedicinType" />
+                    </div>
+                    @if (saveError is not null)
+                    {
+                        <div class="alert alert-danger">@saveError</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Luk</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveMedicinAsync">Gem</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @code {
     private List<LocationResponseDto> locations = new();
     private List<ResidentResponseDto> residents = new();
@@ -217,6 +259,7 @@
 
     private bool showAddLocationModal = false;
     private bool showAddResidentModal = false;
+    private bool showAddMedicinModal = false;
     private string newName = string.Empty;
     private string newAddress = string.Empty;
     private int newZipCode;
@@ -230,6 +273,9 @@
     private string newShoppingDay = string.Empty;
     private string newPayment = string.Empty;
     private int newResidentLocationId;
+
+    private string newMedicinType = string.Empty;
+    private int? selectedResidentId;
 
     private LocationResponseDto? SelectedLocation =>
         locations.FirstOrDefault(l => l.LocationID == selectedLocationId);
@@ -279,12 +325,20 @@
         saveError = null;
         showAddResidentModal = true;
     }
+
+    private void OpenAddMedicinModal()
+    {
+        newMedicinType = string.Empty;
+        saveError = null;
+        showAddMedicinModal = true;
+    }
     
 
     private void CloseModal()
     {
         showAddLocationModal = false;
         showAddResidentModal = false;
+        showAddMedicinModal = false;
     }
 
     private async Task SaveLocationAsync()
@@ -358,6 +412,35 @@
             saveError = $"Fejl ved oprettelse: {response.StatusCode}";
         }
     }
+
+        private async Task SaveMedicinAsync()
+        {
+            saveError = null;
+    
+            if (string.IsNullOrWhiteSpace(newMedicinType) || selectedResidentId == null)
+            {
+                saveError = "Udfyld venligst alle felter.";
+                return;
+            }
+    
+            var dto = new MedicinCreateDto
+            {
+                Type       = newMedicinType,
+                ResidentId = selectedResidentId.Value
+            };
+    
+            var http = HttpClientFactory.CreateClient("API");
+            var response = await http.PostAsJsonAsync("api/medicin", dto);
+    
+            if (response.IsSuccessStatusCode)
+            {
+                CloseModal();
+            }
+            else
+            {
+                saveError = $"Fejl ved oprettelse: {response.StatusCode}";
+            }
+        }
 
     private async Task DeleteLocationAsync(int locationId)
     {

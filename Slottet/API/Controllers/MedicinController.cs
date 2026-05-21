@@ -1,6 +1,11 @@
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Domain.Entities;
+using Application.DTOs.Resident;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+
 
 namespace API.Controllers;
 
@@ -13,6 +18,36 @@ public class MedicinController : ControllerBase
     public MedicinController(ApplicationDbContext db)
     {
         _db = db;
+    }
+
+    //POST /api/medicin
+    [HttpPost]
+    public async Task<ActionResult<MedicinDto>> Create(MedicinCreateDto dto)
+    {
+        var medicin = new Medicin
+        {
+            Type       = dto.Type,
+            ResidentID = dto.ResidentId,
+            Time       = DateTime.Now,
+            IsTaken    = false
+        };
+
+        _db.Medicins.Add(medicin);
+        await _db.SaveChangesAsync();
+
+        //Log oprettelsen i AuditLog
+        await _db.AuditLogs.AddAsync(new AuditLog
+        {
+            LogType = "Activity",
+            Action = "Medicin oprettet",
+            Entity = "Medicin",
+            EntityId = medicin.MedicinID.ToString(),
+            UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
+            UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
+        });
+        await _db.SaveChangesAsync();
+
+        return Ok(MapToResponseDto(medicin));
     }
 
     // PATCH /api/medicin/{id}/taken?isTaken=true
@@ -34,8 +69,8 @@ public class MedicinController : ControllerBase
             Action   = isTaken ? "Medicin taget" : "Medicin fortrudt",
             Entity   = "Medicin",
             EntityId = id.ToString(),
-            UserId   = null,
-            UserName = "unknown"
+            UserId   = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
+            UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
         });
         await _db.SaveChangesAsync();
 
@@ -63,13 +98,21 @@ public class MedicinController : ControllerBase
             Action   = "Medicin tid opdateret",
             Entity   = "Medicin",
             EntityId = id.ToString(),
-            UserId   = null,
-            UserName = "unknown"
+            UserId   = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
+            UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
         });
         await _db.SaveChangesAsync();
 
         return NoContent();
     }
+
+    private static MedicinDto MapToResponseDto(Medicin m) => new()
+    {
+        MedicinID = m.MedicinID,
+        Type = m.Type,
+        Time = m.Time,
+        IsTaken = m.IsTaken
+    };
 }
 
 public class UpdateMedicinRequest

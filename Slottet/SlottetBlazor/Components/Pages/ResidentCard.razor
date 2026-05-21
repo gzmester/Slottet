@@ -34,11 +34,14 @@
             {
                 var med = _sortedMedicins.Count > i ? _sortedMedicins[i] : null;
                 <td>
-                    <div class="flex-container">
+                    <div class="d-flex flex-column ">
                         @if (med != null)
                         {
-                            <input type="time" class="table-input" value="@med.Time.ToString("HH:mm")" @onchange="(ChangeEventArgs e) => OnTimeInputChange(med, e)" disabled="@(!IsLoggedIn)" />
-                            <input type="checkbox" class="checkbox-input" checked="@med.IsTaken" @onchange="() => ToggleIsTakenAsync(med)" disabled="@(!IsLoggedIn)" />
+                            <input type="text" class="table-input" value="@med.Type" disabled />
+                            <div class="d-flex gap-1">
+                                <input type="time" class="table-input" value="@med.Time.ToString("HH:mm")" @onchange="(ChangeEventArgs e) => OnTimeInputChange(med, e)" disabled="@(!IsLoggedIn)" />
+                                <input type="checkbox" class="checkbox-input" checked="@med.IsTaken" @onchange="() => ToggleIsTakenAsync(med)" disabled="@(!IsLoggedIn)" />
+                            </div>
                         }
                         else
                         {
@@ -51,19 +54,25 @@
         </tr>
         <tr>
             <td>PN-tid</td>
-
-                <td><textarea class="table-input" rows="1" disabled="@(!IsLoggedIn)"></textarea>
-                    <input type="time" class="table-input" disabled="@(!IsLoggedIn)" /></td>
-                
-                <td><textarea class="table-input" rows="1" disabled="@(!IsLoggedIn)"></textarea>
-                    <input type="time" class="table-input" disabled="@(!IsLoggedIn)" /></td>
-                
-                <td><textarea class="table-input" rows="1" disabled="@(!IsLoggedIn)"></textarea>
-                    <input type="time" class="table-input" disabled="@(!IsLoggedIn)" /></td>
-                
-                <td><textarea class="table-input" rows="1" disabled="@(!IsLoggedIn)"></textarea>
-                    <input type="time" class="table-input" disabled="@(!IsLoggedIn)" /></td>
-
+                @for (int i = 0; i < 4; i++)
+                {
+                    var index = i;
+                    <td>
+                        <div class="d-flex flex-column">
+                            <input type="time" class="table-input" 
+                                value="@pnTimes[index]"
+                                @onchange="(ChangeEventArgs e) => OnPNTimeSelected(index, e)"
+                                disabled="@(!IsLoggedIn)" />
+                            @if (pnShowType[index])
+                            {
+                                <input type="text" class="table-input" 
+                                    placeholder="Hvad blev givet?"
+                                    value="@pnTypes[index]"
+                                    @onchange="(ChangeEventArgs e) => OnPNTypeChange(index, e)" />
+                            }
+                        </div>
+                    </td>
+                }
         </tr>
     </table>
     
@@ -165,15 +174,22 @@
     public List<MedicinDto> Medicins { get; set; } = new();
 
     [Parameter]
-    public List<string> PNMedicins { get; set; } = new();
-
-    [Parameter]
     public List<StatusDto> Statuses { get; set; } = new();
+    [Parameter]
+    public List<PNMedicinResponseDto> PNMedicins { get; set; } = new();
 
     private string Status = string.Empty;
     private List<StatusDto> _displayStatuses = new();
     private bool _showStatusModal = false;
     private List<MedicinDto> _sortedMedicins = new();
+    
+    
+    
+    private string[] pnTimes = new string[4];
+    private string[] pnTypes = new string[4];
+    private bool[] pnShowType = new bool[4];
+    private int?[] pnIds = new int?[4];
+   
 
     protected override void OnParametersSet()
     {
@@ -183,6 +199,20 @@
             .OrderBy(m => m.Time.TimeOfDay)
             .Take(4)
             .ToList();
+
+        var todaysPNMedicins = PNMedicins
+            .Where(pn => pn.Time.Date == DateTime.Today)
+            .OrderBy(pn => pn.Time)
+            .Take(4)
+            .ToList();
+
+        for (int i = 0; i < todaysPNMedicins.Count; i++)
+        {
+            pnTimes[i] = todaysPNMedicins[i].Time.ToString("HH:mm");
+            pnTypes[i] = todaysPNMedicins[i].Type;
+            pnShowType[i] = true;
+            pnIds[i] = todaysPNMedicins[i].PNMedicinID;
+        }
     }
 
     private async Task SaveChanges()
@@ -248,6 +278,52 @@
                 }
             }
         }
+    }
+
+    private async Task OnPNTimeSelected(int index, ChangeEventArgs e)
+    {
+        if (e.Value is string timeString && !string.IsNullOrEmpty(timeString))
+        {
+            pnTimes[index] = timeString;
+            pnShowType[index] = true;
+        }
+        else
+        {
+            pnShowType[index] = false;
+        }
+    }
+
+    private async Task OnPNTypeChange(int index, ChangeEventArgs e)
+    {
+        pnTypes[index] = e.Value?.ToString() ?? string.Empty;
+        
+        if(string.IsNullOrWhiteSpace(pnTimes[index]))
+        {
+            return;
+        }
+
+        if(TimeSpan.TryParse(pnTimes[index], out var timeSpan))
+        {
+            var time = DateTime.Today.Add(timeSpan);
+
+            var http = HttpClientFactory.CreateClient("API");
+            if (pnIds[index].HasValue)
+            {
+                // PUT — opdater eksisterende
+                await http.PutAsJsonAsync($"api/pnmedicin/{pnIds[index]}", new { Type = pnTypes[index], Time = DateTime.Today.Add(TimeSpan.Parse(pnTimes[index])) });
+            }
+            else
+            {
+                // POST — opret ny
+                var response = await http.PostAsJsonAsync("api/pnmedicin", new PNMedicinCreateDto 
+                    { 
+                        Type = pnTypes[index], 
+                        Time = DateTime.Today.Add(TimeSpan.Parse(pnTimes[index])),
+                        ResidentId = ResidentID 
+                    });
+            }
+        }
+        
     }
 
     private void OnRiskLevelChange(ChangeEventArgs e)
