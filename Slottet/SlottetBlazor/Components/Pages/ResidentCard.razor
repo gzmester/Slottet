@@ -35,6 +35,7 @@
                 var med = _sortedMedicins.Count > i ? _sortedMedicins[i] : null;
                 <td>
                     <div class="d-flex flex-column ">
+                        @*Hvis medicin findes vises typen og tid og checkboks*@
                         @if (med != null)
                         {
                             <input type="text" class="table-input" value="@med.Type" disabled />
@@ -54,6 +55,7 @@
         </tr>
         <tr>
             <td>PN-tid</td>
+            @*Pn tider der vises i 4 kolonner. Hvis der er indtastet en tid, skal typen angives og gemmes*@
                 @for (int i = 0; i < 4; i++)
                 {
                     var index = i;
@@ -184,13 +186,19 @@
     private List<MedicinDto> _sortedMedicins = new();
     
     
-    
+    //array som bruges til at holde styr på de 4 pn tider og typer, bruges til som en mellemstation der holde r data indtil brugeren er færdig med at udfylde både tidspunkt og type
+    //PnTimes bruges til at holde styr på de indtastede tider for pn medicinen
     private string[] pnTimes = new string[4];
+    //PnTypes bruges til at holde styr på de indtastede typer for pn medicinen
     private string[] pnTypes = new string[4];
+    //pnShowType bruges til at holde styr på om typen for pn medicinen skal vises, da den kun skal vises hvis der er indtastet en tid
     private bool[] pnShowType = new bool[4];
+    //pnIds bruges til at holde styr på hvilke pn medicin der allerede findes i databasen, så vi ved om vi skal lave en POST eller en PUT når der ændres i tid eller type
     private int?[] pnIds = new int?[4];
    
 
+    //OnParametersSet kører hver gang der kommer nye parametre ind i komponenten, og her sorteres medicins og pn medicins og de 4 første af hver tages, og pn tider og typer gemmes i arrays
+    //fx når siden indlæses første gang, eller når der kommer nye data ind efter en opdatering
     protected override void OnParametersSet()
     {
         _displayStatuses = Statuses.ToList();
@@ -200,12 +208,14 @@
             .Take(4)
             .ToList();
 
+        //sorter pn medicin efter tid og tag de første 4
         var todaysPNMedicins = PNMedicins
             .Where(pn => pn.Time.Date == DateTime.Today)
             .OrderBy(pn => pn.Time)
             .Take(4)
             .ToList();
 
+        //gem pn tider og typer i arrays, og sæt pnShowType til true for de pn mediciner der har en tid, så typen kan vises
         for (int i = 0; i < todaysPNMedicins.Count; i++)
         {
             pnTimes[i] = todaysPNMedicins[i].Time.ToString("HH:mm");
@@ -280,6 +290,8 @@
         }
     }
 
+    //Når en pn tid vælges eller ændres, opdateres pntime arrayet og pnshowtype sættes til true for at vise type inputtet
+    //Hvis tiden fjernes, sættes pnshowtype til false for at skjule type inputtet
     private async Task OnPNTimeSelected(int index, ChangeEventArgs e)
     {
         if (e.Value is string timeString && !string.IsNullOrEmpty(timeString))
@@ -293,19 +305,29 @@
         }
     }
 
+    //Når en pn type angives eller ændres, opdateres pntype arrayet, og hvis der allerede er en tid for det nuværende index
+    //Sendes enten en POST resquest for at oprette en ny pn medicin, eller en PUT request for at opdatere den eksisterende pn medicin
+    //Afhængit af om der allerde findes en pn medicin i databasen for det nuværende index, som tjekkes via pnIds arrayet
     private async Task OnPNTypeChange(int index, ChangeEventArgs e)
     {
+        //Opdater den indtastede type i arrayet
         pnTypes[index] = e.Value?.ToString() ?? string.Empty;
         
+        //Hvis der ikke er indtastet en tid, skal typen ikke gemmes, og der skal ikke sendes nogen request til API'et, 
+        //da en pn medicin uden tid ikke giver mening, så vi returnerer bare fra metoden
         if(string.IsNullOrWhiteSpace(pnTimes[index]))
         {
             return;
         }
 
+        //Hvis der er indtastet en tid for det nuværende index, skal typen gemems, og der skal sendes en request ti lAPI'et for at gemme ændringen
         if(TimeSpan.TryParse(pnTimes[index], out var timeSpan))
         {
+            //Beregn den fulde tid for pn medicinen ved at kombinere dagens dato med den indtastede tid
             var time = DateTime.Today.Add(timeSpan);
 
+            //Hvis der allerede findes en pn medicin i databasen for det nuværende index,
+            //skal den opdateres med den nye type og tid, ellers skal der oprettes en ny pn medicin med den indtastede type og tid
             var http = HttpClientFactory.CreateClient("API");
             if (pnIds[index].HasValue)
             {

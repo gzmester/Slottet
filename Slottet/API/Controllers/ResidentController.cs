@@ -215,6 +215,7 @@ namespace API.Controllers
             Payment = resident.Payment,
             LocationID = resident.LocationID,
             Location = resident.Location.Name,
+            //Map medicin til medicindto for at undgå beboerid i response
             Medicins = resident.Medicins.Select(m => new MedicinDto
             {
                 MedicinID = m.MedicinID,
@@ -222,12 +223,14 @@ namespace API.Controllers
                 Time      = m.Time,
                 IsTaken   = m.IsTaken
             }).ToList(),
+            //Map pn medicin til pnmedicinresponse dto for at undgå beboerid i response
             PNMedicins = resident.PNMedicins.Select(pn => new PNMedicinResponseDto
             {
                 PNMedicinID = pn.PNMedicinID,
                 Type        = pn.Type,
                 Time        = pn.Time
             }).ToList(),
+            //Map status til statusdto for at undgå beboerid i response, og filtrere så kun dagens statusser returneres
             Statuses = resident.Statuses
                 .Where(s => s.Time.Date == DateTime.Today)
                 .OrderByDescending(s => s.Time)

@@ -21,14 +21,18 @@ public class PNMedicinController : ControllerBase
     }
 
     // PUT /api/pnmedicin/{id}
+    //endpoint til at opdatere en pn medicin, bruges når en medarbejder ændre i en eksisterede pn medicin for en beboer
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdatePNMedicin(int id, [FromBody] UpdatePNMedicinRequest request)
     {
+        //Find pn medicinen i databasen
         var pnmedicin = await _db.PNMedicins.FindAsync(id);
 
+        //Hvis pn medicinen ikke findes, returneres 404 not found
         if (pnmedicin is null)
             return NotFound();
 
+        //Opdatere pn medicinen med de nye værdier
         pnmedicin.Time = request.Time;
         pnmedicin.Type = request.Type;
         await _db.SaveChangesAsync();
@@ -45,13 +49,16 @@ public class PNMedicinController : ControllerBase
         });
         await _db.SaveChangesAsync();
 
+        //Returnere No content når opdateringen er klaret
         return NoContent();
     }
 
     //POST /api/medicin
+    //post endpoint til at oprette en PN medicin for en beboer
     [HttpPost]
     public async Task<ActionResult<PNMedicinResponseDto>> Create(PNMedicinCreateDto dto)
     {
+        //Opret en ny PN medicin baseret på DTO'en
         var pnmedicin = new PNMedicin
         {
             Type       = dto.Type,
@@ -59,6 +66,7 @@ public class PNMedicinController : ControllerBase
             Time       = dto.Time,
         };
 
+        //Gem PN i databasen
         _db.PNMedicins.Add(pnmedicin);
         await _db.SaveChangesAsync();
 
@@ -74,9 +82,11 @@ public class PNMedicinController : ControllerBase
         });
         await _db.SaveChangesAsync();
 
+        //Returnere den oprettede PN medicin som dto
         return Ok(MapToResponseDto(pnmedicin));
     }
 
+    //Hjælpe metode til at mappe PN medicin til response dto
     private static PNMedicinResponseDto MapToResponseDto(PNMedicin m) => new()
     {
         PNMedicinID = m.PNMedicinID,

@@ -21,9 +21,11 @@ public class MedicinController : ControllerBase
     }
 
     //POST /api/medicin
+    //post endpoint til at oprette en medicin for en beboer
     [HttpPost]
     public async Task<ActionResult<MedicinDto>> Create(MedicinCreateDto dto)
     {
+        //Opret en ny medicin baseret på DTO'en
         var medicin = new Medicin
         {
             Type       = dto.Type,
@@ -32,6 +34,7 @@ public class MedicinController : ControllerBase
             IsTaken    = false
         };
 
+        //Gem medicinen i databasen
         _db.Medicins.Add(medicin);
         await _db.SaveChangesAsync();
 
@@ -47,6 +50,7 @@ public class MedicinController : ControllerBase
         });
         await _db.SaveChangesAsync();
 
+        //retturnere den oprettede medicin som DTO
         return Ok(MapToResponseDto(medicin));
     }
 
