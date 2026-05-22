@@ -1,4 +1,5 @@
 using System;
+using Domain.Entities;
 
 namespace Application.DTOs.Resident;
 
@@ -17,6 +18,6 @@ public class ResidentResponseDto
     public string Location { get; set; } = string.Empty;
 
     public List<MedicinDto> Medicins { get; set; } = new();
-    public List<string> PNMedicins { get; set; } = new();
+    public List<PNMedicinResponseDto> PNMedicins { get; set; } = new();
     public List<StatusDto> Statuses { get; set; } = new();
 }
