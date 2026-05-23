@@ -23,6 +23,7 @@ public class ApplicationDbContext : IdentityDbContext<Employee, AppRole, int>
     public DbSet<PhoneNumber> PhoneNumbers { get; set; }
     public DbSet<Shift> Shifts { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<DepartmentTask> DepartmentTasks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -177,6 +178,14 @@ public class ApplicationDbContext : IdentityDbContext<Employee, AppRole, int>
             entity.Property(e => e.Entity).HasMaxLength(50);
             entity.Property(e => e.EntityId).HasMaxLength(50);
             entity.Property(e => e.UserName).HasMaxLength(100);
+        });
+
+        // DepartmentTask (afdelingsopgaver)
+        modelBuilder.Entity<DepartmentTask>(entity =>
+        {
+            entity.ToTable("DepartmentTask");
+            entity.HasKey(e => e.DepartmentTaskID);
+            entity.Property(e => e.Name).HasMaxLength(200);
         });
     }
 }
