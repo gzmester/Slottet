@@ -1,5 +1,9 @@
-﻿@page "/Tasks"
+@page "/Tasks"
 @rendermode InteractiveServer
+@using Application.DTOs.SpecialTask
+@using Application.DTOs.DepartmentTask
+@using Application.DTOs.Employee
+@inject IHttpClientFactory HttpClientFactory
 
 <h1 class="mb-4 d-flex align-items-center">
     <i class="bi bi-list-task me-3 text-primary" style="font-size: 38px;"></i>
@@ -21,35 +25,47 @@
             </div>
 
             <div class="card-body p-0">
-
                 <table class="table align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 50%">Opgave</th>
-                            <th>Navn</th>
+                            <th style="width: 35%">Opgave</th>
+                            <th>Tildelt til</th>
+                            <th style="width: 100px"></th>
                         </tr>
                     </thead>
-
                     <tbody>
                         @foreach (var task in specialTasks)
                         {
                             <tr>
+                                <td class="fw-semibold">@task.Title</td>
                                 <td>
-                                    <input type="text"
-                                           class="form-control-plaintext fw-semibold px-2"
-                                           placeholder="Opgave..."
-                                           @bind="task.Title" />
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        @if (task.Employees.Count == 0)
+                                        {
+                                            <span class="text-muted fst-italic">Ingen tildelt</span>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var emp in task.Employees)
+                                            {
+                                                <span class="badge bg-primary">
+                                                    @emp.FirstName @emp.LastName
+                                                </span>
+                                            }
+                                        }
+                                    </div>
                                 </td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <input type="text"
-                                               class="form-control form-control-sm rounded-3"
-                                               placeholder="Navn..."
-                                               @bind="task.Name" />
-                                        <button class="btn btn-sm btn-outline-danger border-0"
-                                                @onclick="() => specialTasks.Remove(task)"
-                                                title="Fjern">
-                                            <i class="bi bi-x-lg"></i>
+                                <td class="text-end">
+                                    <div class="d-flex gap-2 justify-content-end">
+                                        <button class="btn btn-sm btn-outline-secondary"
+                                                @onclick="() => OpenAssignModal(task)"
+                                                title="Tildel medarbejder">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => RemoveSpecialTask(task)"
+                                                title="Slet opgave">
+                                            <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
                                 </td>
@@ -57,12 +73,11 @@
                         }
                     </tbody>
                 </table>
-
             </div>
 
             <div class="card-footer bg-white border-0 p-3">
                 <button class="btn btn-outline-primary rounded-3 w-100"
-                        @onclick="AddSpecialTask">
+                        @onclick="OpenAddTaskModal">
                     <i class="bi bi-plus-lg me-2"></i>
                     Tilføj opgave
                 </button>
@@ -85,9 +100,7 @@
             </div>
 
             <div class="card-body">
-
                 <div class="row g-3">
-
                     @foreach (var task in departmentTasks)
                     {
                         <div class="col-md-6">
@@ -99,23 +112,22 @@
                                 <input type="text"
                                        class="form-control form-control-sm rounded-3"
                                        placeholder="Skriv opgave..."
-                                       @bind="task.Name" />
+                                       @bind="task.Name"
+                                       @bind:after="() => UpdateDepartmentTaskAsync(task)" />
                                 <button class="btn btn-sm btn-outline-danger border-0 flex-shrink-0"
-                                        @onclick="() => departmentTasks.Remove(task)"
+                                        @onclick="() => RemoveDepartmentTaskAsync(task)"
                                         title="Fjern">
                                     <i class="bi bi-x-lg"></i>
                                 </button>
                             </div>
                         </div>
                     }
-
                 </div>
-
             </div>
 
             <div class="card-footer bg-white border-0 p-3">
                 <button class="btn btn-outline-primary rounded-3 w-100"
-                        @onclick="AddDepartmentTask">
+                        @onclick="OpenAddDepartmentTaskModal">
                     <i class="bi bi-plus-lg me-2"></i>
                     Tilføj opgave
                 </button>
@@ -127,41 +139,293 @@
 
 </div>
 
+<!-- Modal: Tilføj særlig opgave -->
+@if (showAddTaskModal)
+{
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ny særlig opgave</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Opgavetitel</label>
+                        <input type="text" class="form-control" @bind="newTaskTitle"
+                               placeholder="fx. Medicinansvarlig" />
+                    </div>
+                    @if (modalError is not null)
+                    {
+                        <div class="alert alert-danger">@modalError</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModals">Luk</button>
+                    <button type="button" class="btn btn-primary" @onclick="ConfirmAddSpecialTaskAsync">Gem</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+<!-- Modal: Tilføj afdelingsopgave -->
+@if (showAddDepartmentTaskModal)
+{
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ny afdelingsopgave</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Opgavenavn</label>
+                        <input type="text" class="form-control" @bind="newDepartmentTaskName"
+                               placeholder="fx. Fylde handsker op" />
+                    </div>
+                    @if (modalError is not null)
+                    {
+                        <div class="alert alert-danger">@modalError</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModals">Luk</button>
+                    <button type="button" class="btn btn-primary" @onclick="ConfirmAddDepartmentTaskAsync">Gem</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+<!-- Modal: Tildel medarbejdere til særlig opgave -->
+@if (showAssignModal && editingTask is not null)
+{
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tildel medarbejder — @editingTask.Title</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    @if (employees.Count == 0)
+                    {
+                        <p class="text-muted fst-italic">Ingen medarbejdere fundet.</p>
+                    }
+                    else
+                    {
+                        <p class="text-muted small mb-3">Sæt kryds ved de medarbejdere der skal tildeles denne opgave.</p>
+                        <div class="list-group">
+                            @foreach (var emp in employees)
+                            {
+                                var isChecked = selectedEmployeeIds.Contains(emp.Id);
+                                <label class="list-group-item list-group-item-action d-flex align-items-center gap-3"
+                                       style="cursor: pointer;">
+                                    <input type="checkbox"
+                                           class="form-check-input flex-shrink-0"
+                                           checked="@isChecked"
+                                           @onchange="() => ToggleEmployee(emp.Id)" />
+                                    <span>@emp.FirstName @emp.LastName</span>
+                                    @if (isChecked)
+                                    {
+                                        <span class="badge bg-primary ms-auto">Tildelt</span>
+                                    }
+                                </label>
+                            }
+                        </div>
+                    }
+                    @if (modalError is not null)
+                    {
+                        <div class="alert alert-danger mt-3">@modalError</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModals">Luk</button>
+                    <button type="button" class="btn btn-primary" @onclick="ConfirmAssignAsync">Gem</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @code {
 
-    private List<TaskItem> specialTasks = new()
-    {
-        new TaskItem { Title = "Medicinansvarlig" },
-        new TaskItem { Title = "Omsorgsperson" },
-        new TaskItem { Title = "Frokost" },
-        new TaskItem { Title = "Aftensmad" },
-        new TaskItem { Title = "Hygiejne / afsprit" },
-        new TaskItem { Title = "Ventil-tid" },
-        new TaskItem { Title = "Rengøring af depot mandag før kl.14:00" },
-        new TaskItem { Title = "Oprydning på kontor tirsdag før kl.14:00" }
-    };
+    // ── Særligt ansvarlige (API-backed) ──────────────────────────────
+    private List<SpecialTaskResponseDto> specialTasks = new();
+    private List<EmployeeResponseDto> employees = new();
+    private bool showAddTaskModal = false;
+    private bool showAssignModal = false;
+    private string newTaskTitle = string.Empty;
+    private HashSet<int> selectedEmployeeIds = new();
+    private SpecialTaskResponseDto? editingTask = null;
+    private string? modalError = null;
 
-    private List<TaskItem> departmentTasks = new()
-    {
-        new TaskItem { Name = "Fylde handsker op" },
-        new TaskItem { Name = "Tømme opvaskemaskine" },
-        new TaskItem { Name = "Rydde fællesrum" },
-        new TaskItem { Name = "Kontrollere lager" }
-    };
+    // ── Afdelingsopgaver (API-backed) ────────────────────────────────
+    private List<DepartmentTaskResponseDto> departmentTasks = new();
+    private bool showAddDepartmentTaskModal = false;
+    private string newDepartmentTaskName = string.Empty;
 
-    private void AddSpecialTask()
+    protected override async Task OnInitializedAsync()
     {
-        specialTasks.Add(new TaskItem());
+        var http = HttpClientFactory.CreateClient("API");
+
+        var specialResult = await http.GetFromJsonAsync<List<SpecialTaskResponseDto>>("api/specialtasks");
+        if (specialResult is not null) specialTasks = specialResult;
+
+        var deptResult = await http.GetFromJsonAsync<List<DepartmentTaskResponseDto>>("api/departmenttasks");
+        if (deptResult is not null) departmentTasks = deptResult;
+
+        try
+        {
+            var empResult = await http.GetFromJsonAsync<List<EmployeeResponseDto>>("api/employees");
+            if (empResult is not null) employees = empResult;
+        }
+        catch { /* api/employees kræver auth — listen forbliver tom, hvis man ikke erlogget ind */ }
     }
 
-    private void AddDepartmentTask()
+    // ── Særligt ansvarlige methods ────────────────────────────────────
+
+    private void OpenAddTaskModal()
     {
-        departmentTasks.Add(new TaskItem());
+        newTaskTitle = string.Empty;
+        modalError = null;
+        showAddTaskModal = true;
     }
 
-    public class TaskItem
+    private void OpenAssignModal(SpecialTaskResponseDto task)
     {
-        public string Title { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
+        editingTask = task;
+        selectedEmployeeIds = task.Employees.Select(e => e.Id).ToHashSet();
+        modalError = null;
+        showAssignModal = true;
+    }
+
+    private void ToggleEmployee(int id)
+    {
+        if (!selectedEmployeeIds.Remove(id))
+            selectedEmployeeIds.Add(id);
+    }
+
+    private void CloseModals()
+    {
+        showAddTaskModal = false;
+        showAssignModal = false;
+        showAddDepartmentTaskModal = false;
+        editingTask = null;
+        modalError = null;
+    }
+
+    private async Task ConfirmAddSpecialTaskAsync()
+    {
+        modalError = null;
+        if (string.IsNullOrWhiteSpace(newTaskTitle))
+        {
+            modalError = "Indtast en opgavetitel.";
+            return;
+        }
+
+        var http = HttpClientFactory.CreateClient("API");
+        var dto = new SpecialTaskCreateDto { Title = newTaskTitle.Trim() };
+        var response = await http.PostAsJsonAsync("api/specialtasks", dto);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var created = await response.Content.ReadFromJsonAsync<SpecialTaskResponseDto>();
+            if (created is not null) specialTasks.Add(created);
+            CloseModals();
+        }
+        else
+        {
+            modalError = $"Fejl ved oprettelse ({response.StatusCode}).";
+        }
+    }
+
+    private async Task ConfirmAssignAsync()
+    {
+        modalError = null;
+        if (editingTask is null) return;
+
+        var http = HttpClientFactory.CreateClient("API");
+        var dto = new SpecialTaskUpdateEmployeesDto { EmployeeIds = selectedEmployeeIds.ToList() };
+        var response = await http.PutAsJsonAsync($"api/specialtasks/{editingTask.SpecialTaskID}/employees", dto);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var updated = await response.Content.ReadFromJsonAsync<SpecialTaskResponseDto>();
+            if (updated is not null)
+            {
+                var index = specialTasks.FindIndex(t => t.SpecialTaskID == updated.SpecialTaskID);
+                if (index >= 0) specialTasks[index] = updated;
+            }
+            CloseModals();
+        }
+        else
+        {
+            modalError = $"Fejl ved tildeling ({response.StatusCode}).";
+        }
+    }
+
+    private async Task RemoveSpecialTask(SpecialTaskResponseDto task)
+    {
+        var http = HttpClientFactory.CreateClient("API");
+        var response = await http.DeleteAsync($"api/specialtasks/{task.SpecialTaskID}");
+        if (response.IsSuccessStatusCode)
+            specialTasks.Remove(task);
+    }
+
+    // ── Afdelingsopgaver methods ──────────────────────────────────────
+
+    private void OpenAddDepartmentTaskModal()
+    {
+        newDepartmentTaskName = string.Empty;
+        modalError = null;
+        showAddDepartmentTaskModal = true;
+    }
+
+    private async Task ConfirmAddDepartmentTaskAsync()
+    {
+        modalError = null;
+        if (string.IsNullOrWhiteSpace(newDepartmentTaskName))
+        {
+            modalError = "Indtast et opgavenavn.";
+            return;
+        }
+
+        var http = HttpClientFactory.CreateClient("API");
+        var dto = new DepartmentTaskCreateDto { Name = newDepartmentTaskName.Trim() };
+        var response = await http.PostAsJsonAsync("api/departmenttasks", dto);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var created = await response.Content.ReadFromJsonAsync<DepartmentTaskResponseDto>();
+            if (created is not null) departmentTasks.Add(created);
+            CloseModals();
+        }
+        else
+        {
+            modalError = $"Fejl ved oprettelse ({response.StatusCode}).";
+        }
+    }
+
+    private async Task UpdateDepartmentTaskAsync(DepartmentTaskResponseDto task)
+    {
+        if (string.IsNullOrWhiteSpace(task.Name)) return;
+
+        var http = HttpClientFactory.CreateClient("API");
+        var dto = new DepartmentTaskUpdateDto { Name = task.Name.Trim() };
+        await http.PutAsJsonAsync($"api/departmenttasks/{task.Id}", dto);
+    }
+
+    private async Task RemoveDepartmentTaskAsync(DepartmentTaskResponseDto task)
+    {
+        var http = HttpClientFactory.CreateClient("API");
+        var response = await http.DeleteAsync($"api/departmenttasks/{task.Id}");
+        if (response.IsSuccessStatusCode)
+            departmentTasks.Remove(task);
     }
 }
