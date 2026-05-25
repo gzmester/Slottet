@@ -9,11 +9,10 @@ public class ResidentPublicDto
     public int ResidentID { get; set; }
     public int LocationID { get; set; }
 
-    // Risiko og humør vises — ingen navne, rum, statustekster, medicin eller betaling
+    // Risiko og humør vises — ingen navne, rum, statustekster eller betaling
     public string RiskLevel { get; set; } = string.Empty;
     public string Mood { get; set; } = "Neutral";
 
-    // Kun antal medicin og om nogen er taget — ingen tidspunkter
-    public int MedicinCount { get; set; }
-    public int MedicinTakenCount { get; set; }
+    // Medicin-tidspunkter og tagningsstatus vises — ingen medicinnavn
+    public List<MedicinPublicDto> Medicins { get; set; } = new();
 }

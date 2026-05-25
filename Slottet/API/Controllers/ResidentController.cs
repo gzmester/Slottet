@@ -52,12 +52,18 @@ namespace API.Controllers
 
             var result = residents.Select(r => new ResidentPublicDto
             {
-                ResidentID       = r.ResidentID,
-                LocationID       = r.LocationID,
-                RiskLevel        = r.RiskLevel.ToString(),
-                Mood             = r.Mood.ToString(),
-                MedicinCount     = r.Medicins.Count,
-                MedicinTakenCount = r.Medicins.Count(m => m.IsTaken)
+                ResidentID = r.ResidentID,
+                LocationID = r.LocationID,
+                RiskLevel  = r.RiskLevel.ToString(),
+                Mood       = r.Mood.ToString(),
+                Medicins   = r.Medicins
+                    .OrderBy(m => m.Time.TimeOfDay)
+                    .Select(m => new MedicinPublicDto
+                    {
+                        Time    = m.Time.ToString("HH:mm"),
+                        IsTaken = m.IsTaken
+                    })
+                    .ToList()
             });
 
             return Ok(result);

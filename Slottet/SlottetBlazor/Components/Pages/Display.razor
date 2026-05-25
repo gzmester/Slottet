@@ -35,6 +35,22 @@
         </div>
     </header>
 
+    @if (!isLoading && residents.Count > 0)
+    {
+        <div class="display-summary-bar">
+            <span class="summary-item">@residents.Count beboere</span>
+            @if (residents.Any(r => r.RiskLevel == "Red"))
+            {
+                <span class="summary-item summary-high-risk">&#9888; @residents.Count(r => r.RiskLevel == "Red") høj risiko</span>
+            }
+            @if (residents.Sum(r => r.Medicins.Count) > 0)
+            {
+                <span class="summary-item">@residents.Sum(r => r.Medicins.Count(m => m.IsTaken)) / @residents.Sum(r => r.Medicins.Count) medicin taget</span>
+            }
+            <span class="summary-item summary-refresh">Opdateret @lastRefresh</span>
+        </div>
+    }
+
     @if (isLoading)
     {
         <div class="display-loading">
@@ -54,27 +70,44 @@
             {
                 <div class="display-card">
                     <div class="display-card-header @GetRiskClass(r.RiskLevel)">
-                        <span class="display-card-icon">👤</span>
-                        <span class="display-risk-badge">@GetRiskLabel(r.RiskLevel)</span>
+                        <span class="display-risk-label">@GetRiskLabel(r.RiskLevel)</span>
+                        <span class="display-mood-emoji">@GetMoodIcon(r.Mood)</span>
                     </div>
                     <div class="display-card-body">
-                        <div class="display-mood">
-                            <span class="display-mood-label">Humør</span>
-                            <span class="display-mood-icon">@GetMoodIcon(r.Mood)</span>
+                        <div class="display-mood-row">
+                            <span class="display-section-label">Humør</span>
+                            <span class="display-mood-text">@GetMoodLabel(r.Mood)</span>
                         </div>
-                        <div class="display-medicin">
-                            <span class="display-medicin-label">Medicin</span>
-                            <div class="display-medicin-progress">
-                                @for (int i = 0; i < r.MedicinCount; i++)
+                        <div class="display-medicin-section">
+                            <div class="display-medicin-header-row">
+                                <span class="display-section-label">Medicin</span>
+                                @if (r.Medicins.Count > 0)
                                 {
-                                    var taken = i < r.MedicinTakenCount;
-                                    <span class="display-medicin-dot @(taken ? "taken" : "pending")"></span>
+                                    <span class="display-medicin-count">@r.Medicins.Count(m => m.IsTaken) / @r.Medicins.Count taget</span>
                                 }
-                                @if (r.MedicinCount == 0)
+                                else
                                 {
-                                    <span class="text-muted small">Ingen</span>
+                                    <span class="display-no-medicin">Ingen</span>
                                 }
                             </div>
+                            @if (r.Medicins.Count > 0)
+                            {
+                                <div class="display-progress-bar">
+                                    <div class="display-progress-fill" style="width: @GetMedicinPercent(r)%"></div>
+                                </div>
+                                <div class="display-medicin-pills">
+                                    @foreach (var med in r.Medicins)
+                                    {
+                                        <span class="display-medicin-pill @(med.IsTaken ? "taken" : "pending")">
+                                            @if (med.IsTaken)
+                                            {
+                                                <span class="pill-check">✓</span>
+                                            }
+                                            @med.Time
+                                        </span>
+                                    }
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
@@ -95,7 +128,9 @@
 
     private string currentTime = "";
     private string currentDate = "";
+    private string lastRefresh = "";
     private System.Threading.Timer? _clockTimer;
+    private System.Threading.Timer? _refreshTimer;
 
     protected override async Task OnInitializedAsync()
     {
@@ -114,6 +149,12 @@
             selectedLocationId = locations[0].LocationID;
 
         await LoadResidents();
+
+        _refreshTimer = new System.Threading.Timer(async _ =>
+        {
+            await LoadResidents();
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
     }
 
     private void UpdateClock()
@@ -149,6 +190,7 @@
 
             var loc = locations.FirstOrDefault(l => l.LocationID == selectedLocationId);
             locationName = loc?.Name ?? "Storskærm";
+            lastRefresh = DateTime.Now.ToString("HH:mm");
         }
         catch { }
         finally
@@ -187,8 +229,20 @@
         _         => "😑"
     };
 
+    private static string GetMoodLabel(string mood) => mood switch
+    {
+        "Happy"   => "Glad",
+        "Sad"     => "Trist",
+        "Neutral" => "Neutral",
+        _         => "Neutral"
+    };
+
+    private static int GetMedicinPercent(ResidentPublicDto r) =>
+        r.Medicins.Count > 0 ? (int)Math.Round((double)r.Medicins.Count(m => m.IsTaken) / r.Medicins.Count * 100) : 0;
+
     public void Dispose()
     {
         _clockTimer?.Dispose();
+        _refreshTimer?.Dispose();
     }
 }
