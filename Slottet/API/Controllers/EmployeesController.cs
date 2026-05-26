@@ -176,7 +176,7 @@ public class EmployeesController : ControllerBase
         return Ok(MapToResponseDto(employee));
     }
 
-    // DELETE /api/employees/{id}
+    // DELETE /api/employees/{id} — GDPR: permanent sletning af medarbejder og al tilknyttet data
     [HttpDelete("{id}")]
     [Authorize(Policy = "RequireAdmin")]
     public async Task<IActionResult> Delete(int id)
@@ -186,17 +186,18 @@ public class EmployeesController : ControllerBase
         if (employee is null)
             return NotFound();
 
+        var name = $"{employee.FirstName} {employee.LastName}";
+
         await _userManager.DeleteAsync(employee);
 
-        // Log sletningen
         await _db.AuditLogs.AddAsync(new AuditLog
         {
-            LogType = "Activity",
-            Action = "Medarbejder slettet",
-            Entity = "Employee",
-            EntityId = employee.Id.ToString(),
-            UserId = CurrentUserId,
-            UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
+            LogType  = "GDPR",
+            Action   = $"GDPR sletning: Medarbejder '{name}' (ID {id}) og al tilknyttet data er permanent slettet.",
+            Entity   = "Employee",
+            EntityId = id.ToString(),
+            UserId   = null,
+            UserName = "unknown"
         });
         await _db.SaveChangesAsync();
 

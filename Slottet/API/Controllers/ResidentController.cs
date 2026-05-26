@@ -172,6 +172,37 @@ namespace API.Controllers
             return Ok(MapToResponseDto(resident!));
         }
 
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var resident = await _db.Residents
+                .Include(r => r.Medicins)
+                .Include(r => r.PNMedicins)
+                .Include(r => r.Statuses)
+                .FirstOrDefaultAsync(r => r.ResidentID == id);
+
+            if (resident == null)
+                return NotFound($"Resident with ID {id} not found");
+
+            var name = $"{resident.FirstName} {resident.LastName}";
+
+            _db.Residents.Remove(resident);
+            await _db.SaveChangesAsync();
+
+            await _db.AuditLogs.AddAsync(new AuditLog
+            {
+                LogType  = "GDPR",
+                Action   = $"GDPR sletning: Borger '{name}' (ID {id}) og al tilknyttet data er permanent slettet.",
+                Entity   = "Resident",
+                EntityId = id.ToString(),
+                UserId   = null,
+                UserName = "unknown"
+            });
+            await _db.SaveChangesAsync();
+
+            return NoContent();
+        }
+
         [HttpPost]
         public async Task<ActionResult<ResidentResponseDto>> Create(ResidentCreateDto createDto)
         {

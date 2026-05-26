@@ -1,0 +1,283 @@
+@page "/gdpr"
+@rendermode InteractiveServer
+@using Application.DTOs.Resident
+@using Application.DTOs.Employee
+@inject IHttpClientFactory HttpClientFactory
+@inject IJSRuntime JS
+
+<h1><span style="font-size: 28px;">🔒</span> GDPR — Slet persondata</h1>
+
+<p class="text-muted" style="max-width: 650px; margin-bottom: 1.5rem;">
+    Søg en borger eller medarbejder frem og slet al tilknyttet data permanent.
+    Sletningen logges i AuditLog.
+</p>
+
+@if (loadError is not null)
+{
+    <div class="alert alert-danger">@loadError</div>
+}
+
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+        <button class="nav-link @(activeTab == "resident" ? "active" : "")" @onclick='() => SetTab("resident")'>
+            🏠 Borgere
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link @(activeTab == "employee" ? "active" : "")" @onclick='() => SetTab("employee")'>
+            👤 Medarbejdere
+        </button>
+    </li>
+</ul>
+
+@if (activeTab == "resident")
+{
+    <div class="gdpr-search-box mb-3" style="max-width:420px;">
+        <input class="form-control" placeholder="Søg borger på navn..." @bind="residentSearch" @bind:event="oninput" />
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(residentSearch))
+    {
+        var filtered = residents.Where(r =>
+            ($"{r.FirstName} {r.LastName}").Contains(residentSearch, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        if (filtered.Count == 0)
+        {
+            <p class="text-muted">Ingen borgere fundet.</p>
+        }
+        else
+        {
+            <table class="table table-sm table-hover" style="max-width:640px;">
+                <thead class="table-light">
+                    <tr><th>Navn</th><th>Lokation</th><th>Rum</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in filtered)
+                    {
+                        <tr class="@(selectedResident?.ResidentID == r.ResidentID ? "table-primary" : "")">
+                            <td>@r.FirstName @r.LastName</td>
+                            <td>@r.Location</td>
+                            <td>@r.Room</td>
+                            <td><button class="btn btn-sm btn-outline-primary" @onclick="() => SelectResident(r)">Vis data</button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+
+    @if (selectedResident is not null)
+    {
+        <div class="gdpr-detail-panel mt-2" style="max-width:580px;">
+            <h5>📋 @selectedResident.FirstName @selectedResident.LastName</h5>
+            <div class="gdpr-data-row"><span class="gdpr-label">Lokation:</span> @selectedResident.Location</div>
+            <div class="gdpr-data-row"><span class="gdpr-label">Rum:</span> @selectedResident.Room</div>
+            <div class="gdpr-data-row"><span class="gdpr-label">Risikoniveau:</span> @selectedResident.RiskLevel</div>
+            <div class="gdpr-data-row"><span class="gdpr-label">Medicin:</span> @selectedResident.Medicins?.Count stk.</div>
+            <div class="gdpr-data-row"><span class="gdpr-label">Statusnotater:</span> @selectedResident.Statuses?.Count stk.</div>
+            <div class="gdpr-delete-box mt-3">
+                <p>⚠️ <strong>Permanent sletning</strong> — kan ikke fortrydes.<br />Skriv borgerens fulde navn for at bekræfte:</p>
+                <input class="form-control mb-2" style="max-width:320px;"
+                       placeholder="@selectedResident.FirstName @selectedResident.LastName"
+                       @bind="residentConfirmName" />
+                @if (residentError is not null) { <div class="alert alert-danger py-2">@residentError</div> }
+                @if (residentSuccess is not null) { <div class="alert alert-success py-2">@residentSuccess</div> }
+                <button class="btn btn-danger me-2" @onclick="DeleteResidentAsync" disabled="@isResidentDeleting">
+                    @(isResidentDeleting ? "Sletter..." : "🗑️ Slet permanent")
+                </button>
+                <button class="btn btn-secondary" @onclick="() => selectedResident = null">Annuller</button>
+            </div>
+        </div>
+    }
+}
+
+@if (activeTab == "employee")
+{
+    <div class="gdpr-search-box mb-3" style="max-width:420px;">
+        <input class="form-control" placeholder="Søg medarbejder på navn..." @bind="employeeSearch" @bind:event="oninput" />
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(employeeSearch))
+    {
+        var filtered = employees.Where(e =>
+            ($"{e.FirstName} {e.LastName}").Contains(employeeSearch, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        if (filtered.Count == 0)
+        {
+            <p class="text-muted">Ingen medarbejdere fundet.</p>
+        }
+        else
+        {
+            <table class="table table-sm table-hover" style="max-width:640px;">
+                <thead class="table-light">
+                    <tr><th>Navn</th><th>E-mail</th><th>Lokation</th><th>Rolle</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in filtered)
+                    {
+                        <tr class="@(selectedEmployee?.Id == e.Id ? "table-primary" : "")">
+                            <td>@e.FirstName @e.LastName</td>
+                            <td>@e.Email</td>
+                            <td>@e.LocationName</td>
+                            <td>@string.Join(", ", e.Roles)</td>
+                            <td><button class="btn btn-sm btn-outline-primary" @onclick="() => SelectEmployee(e)">Vis data</button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+
+    @if (selectedEmployee is not null)
+    {
+        <div class="gdpr-detail-panel mt-2" style="max-width:580px;">
+            <h5>📋 @selectedEmployee.FirstName @selectedEmployee.LastName</h5>
+            <div class="gdpr-data-row"><span class="gdpr-label">E-mail:</span> @selectedEmployee.Email</div>
+            <div class="gdpr-data-row"><span class="gdpr-label">Telefon:</span> @selectedEmployee.PhoneNumber</div>
+            <div class="gdpr-data-row"><span class="gdpr-label">Lokation:</span> @selectedEmployee.LocationName</div>
+            <div class="gdpr-data-row"><span class="gdpr-label">Roller:</span> @string.Join(", ", selectedEmployee.Roles)</div>
+            <div class="gdpr-data-row"><span class="gdpr-label">Ansvarsområder:</span> @string.Join(", ", selectedEmployee.JobRoles)</div>
+            <div class="gdpr-delete-box mt-3">
+                <p>⚠️ <strong>Permanent sletning</strong> — kan ikke fortrydes.<br />Skriv medarbejderens fulde navn for at bekræfte:</p>
+                <input class="form-control mb-2" style="max-width:320px;"
+                       placeholder="@selectedEmployee.FirstName @selectedEmployee.LastName"
+                       @bind="employeeConfirmName" />
+                @if (employeeError is not null) { <div class="alert alert-danger py-2">@employeeError</div> }
+                @if (employeeSuccess is not null) { <div class="alert alert-success py-2">@employeeSuccess</div> }
+                <button class="btn btn-danger me-2" @onclick="DeleteEmployeeAsync" disabled="@isEmployeeDeleting">
+                    @(isEmployeeDeleting ? "Sletter..." : "🗑️ Slet permanent")
+                </button>
+                <button class="btn btn-secondary" @onclick="() => selectedEmployee = null">Annuller</button>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private string activeTab = "resident";
+
+    private List<ResidentResponseDto> residents = new();
+    private ResidentResponseDto? selectedResident;
+    private string residentSearch = string.Empty;
+    private string residentConfirmName = string.Empty;
+    private string? residentError;
+    private string? residentSuccess;
+    private bool isResidentDeleting;
+
+    private List<EmployeeResponseDto> employees = new();
+    private EmployeeResponseDto? selectedEmployee;
+    private string employeeSearch = string.Empty;
+    private string employeeConfirmName = string.Empty;
+    private string? employeeError;
+    private string? employeeSuccess;
+    private bool isEmployeeDeleting;
+
+    private string? loadError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var http = HttpClientFactory.CreateClient("API");
+        try
+        {
+            var res = await http.GetFromJsonAsync<List<ResidentResponseDto>>("api/Resident");
+            if (res is not null) residents = res;
+        }
+        catch (Exception ex) { loadError = $"Kunne ikke hente borgere: {ex.Message}"; }
+
+        try
+        {
+            var emp = await http.GetFromJsonAsync<List<EmployeeResponseDto>>("api/employees");
+            if (emp is not null) employees = emp;
+        }
+        catch (Exception ex) { loadError = (loadError ?? "") + $" Kunne ikke hente medarbejdere: {ex.Message}"; }
+    }
+
+    private void SetTab(string tab)
+    {
+        activeTab = tab;
+        selectedResident = null;
+        selectedEmployee = null;
+        residentSearch = string.Empty;
+        employeeSearch = string.Empty;
+    }
+
+    private void SelectResident(ResidentResponseDto r)
+    {
+        selectedResident = r;
+        residentConfirmName = string.Empty;
+        residentError = null;
+        residentSuccess = null;
+    }
+
+    private void SelectEmployee(EmployeeResponseDto e)
+    {
+        selectedEmployee = e;
+        employeeConfirmName = string.Empty;
+        employeeError = null;
+        employeeSuccess = null;
+    }
+
+    private async Task DeleteResidentAsync()
+    {
+        if (selectedResident is null) return;
+        var expectedName = $"{selectedResident.FirstName} {selectedResident.LastName}";
+        if (!residentConfirmName.Trim().Equals(expectedName, StringComparison.OrdinalIgnoreCase))
+        {
+            residentError = "Navnet matcher ikke. Skriv borgerens fulde navn præcist.";
+            return;
+        }
+        var confirmed = await JS.InvokeAsync<bool>("confirm",
+            $"Er du HELT sikker på at slette alle data for {expectedName}? Dette kan ikke fortrydes!");
+        if (!confirmed) return;
+
+        isResidentDeleting = true;
+        residentError = null;
+        try
+        {
+            var http = HttpClientFactory.CreateClient("API");
+            var response = await http.DeleteAsync($"api/Resident/{selectedResident.ResidentID}");
+            if (response.IsSuccessStatusCode)
+            {
+                residentSuccess = $"✅ {expectedName} er permanent slettet og logget i AuditLog.";
+                residents.RemoveAll(r => r.ResidentID == selectedResident.ResidentID);
+                selectedResident = null;
+                residentSearch = string.Empty;
+            }
+            else { residentError = $"Fejl ved sletning: {response.StatusCode}"; }
+        }
+        catch (Exception ex) { residentError = ex.Message; }
+        finally { isResidentDeleting = false; }
+    }
+
+    private async Task DeleteEmployeeAsync()
+    {
+        if (selectedEmployee is null) return;
+        var expectedName = $"{selectedEmployee.FirstName} {selectedEmployee.LastName}";
+        if (!employeeConfirmName.Trim().Equals(expectedName, StringComparison.OrdinalIgnoreCase))
+        {
+            employeeError = "Navnet matcher ikke. Skriv medarbejderens fulde navn præcist.";
+            return;
+        }
+        var confirmed = await JS.InvokeAsync<bool>("confirm",
+            $"Er du HELT sikker på at slette alle data for {expectedName}? Dette kan ikke fortrydes!");
+        if (!confirmed) return;
+
+        isEmployeeDeleting = true;
+        employeeError = null;
+        try
+        {
+            var http = HttpClientFactory.CreateClient("API");
+            var response = await http.DeleteAsync($"api/employees/{selectedEmployee.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                employeeSuccess = $"✅ {expectedName} er permanent slettet og logget i AuditLog.";
+                employees.RemoveAll(e => e.Id == selectedEmployee.Id);
+                selectedEmployee = null;
+                employeeSearch = string.Empty;
+            }
+            else { employeeError = $"Fejl ved sletning: {response.StatusCode}"; }
+        }
+        catch (Exception ex) { employeeError = ex.Message; }
+        finally { isEmployeeDeleting = false; }
+    }
+}

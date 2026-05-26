@@ -24,7 +24,6 @@ public class ApplicationDbContext : IdentityDbContext<Employee, AppRole, int>
     public DbSet<Shift> Shifts { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
     public DbSet<DepartmentTask> DepartmentTasks { get; set; }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -187,5 +186,6 @@ public class ApplicationDbContext : IdentityDbContext<Employee, AppRole, int>
             entity.HasKey(e => e.DepartmentTaskID);
             entity.Property(e => e.Name).HasMaxLength(200);
         });
+
     }
 }
