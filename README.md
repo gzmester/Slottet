@@ -96,7 +96,7 @@ cd Slottet/SlottetBlazor
 dotnet run
 ```
 
-Starter paa http://localhost:5140. Laeder ApiBaseUrl fra appsettings.json (standard: http://localhost:5000). Tilsidesaet ved at saette miljoevariablen ApiBaseUrl inden start.
+Starter paa http://localhost:5140. Laeder ApiBaseUrl fra appsettings.json (standard: http://localhost:5000). Tilsidesaet ved at saette miljøvariablen ApiBaseUrl inden start.
 
 ### 4. Databasemigrationer
 
