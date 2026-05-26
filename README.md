@@ -362,13 +362,6 @@ Alle dataopdaterende handlinger skriver en raekke til AuditLogs-tabellen med Use
 
 ---
 
-## Licens
-
-Eksamensprojekt.
-
-
----
-
 ## Hosting
 
 Projektet er hostet på en privat Linux-server. Gruppen har valgt at bruge gratis vaerktoejer til at eksponere det på internettet:
