@@ -200,11 +200,11 @@ Tokens er ikke revocerbare server-side. Logout rydder kun tokenet fra localStora
 
 | Identity-rolle  | Politik          | Adgangsniveau                                         |
 |-----------------|------------------|-------------------------------------------------------|
-| Admin           | RequireAdmin     | Fuld adgang, herunder medarbejderadministration       |
-| Vagtansvarlig   | RequireScheduler | Vagtplanlaegning, laesning af alle medarbejdere       |
-| Plejepersonale  | RequireCareStaff | Laese/opdatere beboere, registrere vagter og statusser |
+| Admin           | RequireAdmin     | Fuld adgang, herunder medarbejderadministration, læse log, slette medarbejdere / borgere hvis der kommer en GPDR forespørgsel      |
+| Vagtansvarlig   | RequireScheduler | Vagtplanlægning, læsning af alle medarbejdere       |
+| Plejepersonale  | RequireCareStaff | Læse/opdatere beboere, registrere vagter og statusser, humør, og risiko |
 
-Foerste login returnerer requiresSetup: true, hvis medarbejderen endnu ikke har en PIN, hvilket udloser PIN-opsaetningsmodalen.
+Første login returnerer requiresSetup: true, hvis medarbejderen endnu ikke har en PIN, hvilket udloser PIN-opsaetningsmodalen.
 
 ---
 
@@ -243,7 +243,7 @@ I Docker saettes ApiBaseUrl automatisk til http://slottet-api:8080 af docker-com
 | Metode | Sti                      | Politik      | Beskrivelse                           |
 |--------|--------------------------|--------------|---------------------------------------|
 | POST   | /api/auth/login          | Ingen        | Login - returnerer JWT                |
-| POST   | /api/auth/setup-pincode  | Ingen        | Saet PIN for nye brugere              |
+| POST   | /api/auth/setup-pincode  | Ingen        | Sæt PIN for nye brugere (ved første login)             |
 | POST   | /api/auth/assign-role    | RequireAdmin | Tildel Identity-rolle til medarbejder |
 
 ### Medarbejdere
@@ -263,7 +263,7 @@ I Docker saettes ApiBaseUrl automatisk til http://slottet-api:8080 af docker-com
 | Metode | Sti                    | Politik          | Beskrivelse                                    |
 |--------|------------------------|------------------|------------------------------------------------|
 | GET    | /api/resident          | Ingen            | Hent alle beboere med statusser                |
-| GET    | /api/resident/public   | Ingen            | Offentlig storskaemsvisning (ingen persondata) |
+| GET    | /api/resident/public   | Ingen            | Offentlig storskaemsvisning (ingen persondata) til personale skærm |
 | PUT    | /api/resident/{id}     | RequireCareStaff | Opdater beboer, humor, risikoniveau, status    |
 
 ### Vagter
@@ -288,7 +288,7 @@ I Docker saettes ApiBaseUrl automatisk til http://slottet-api:8080 af docker-com
 | POST   | /api/pnmedicin       | Ingen   | Opret PN-medicin for en beboer       |
 | PUT    | /api/pnmedicin/{id}  | Ingen   | Opdater PN-medicinens tidspunkt/type |
 
-### Telefonnumre
+### Telefonnumre arbejdstelefoner
 
 | Metode | Sti                                 | Politik | Beskrivelse                           |
 |--------|-------------------------------------|---------|---------------------------------------|
@@ -336,7 +336,7 @@ I Docker saettes ApiBaseUrl automatisk til http://slottet-api:8080 af docker-com
 
 | Metode | Sti             | Politik | Beskrivelse                               |
 |--------|-----------------|---------|-------------------------------------------|
-| GET    | /api/auditlog   | Ingen   | Hent alle logposter, sorteret nyest foerst |
+| GET    | /api/auditlog   | Ingen   | Hent alle logposter, sorteret nyest først |
 
 ### System
 
@@ -354,11 +354,11 @@ Alle dataopdaterende handlinger skriver en raekke til AuditLogs-tabellen med Use
 
 ## Udviklingsnoter
 
-- .env-filen er git-ignoreret. Commit den aldrig. Brug .env.example som reference.
+- .env-filen er git-ignoreret. du skal selve opsætte din .env før at du kan hoste via docker.
 - appsettings.json-filer indeholder ingen secrets - kun sikre strukturelle standardvaerdier.
 - I Docker tilsidesætter miljøvariable fra docker-compose.yml appsettings.json via den standard .NET-konfigurationsprioritetskaede.
-- Docker health check poller GET /health hvert 30. sekund. Blazor-containeren starter ikke, foer API'et passerer.
-- Koersel af dotnet run fra API/ medfoerer, at DotNetEnv traverserer opad og finder .env ved solution-roden.
+- Docker health check poller GET /health hvert 30. sekund. Blazor-containeren starter ikke, før API'et reagere.
+- Kørsel af dotnet run fra API/ medfører, at DotNetEnv traverser opad og finder .env ved solution-root.
 
 ---
 
