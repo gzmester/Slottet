@@ -420,7 +420,7 @@ Testene bruger en in-memory database (Microsoft.EntityFrameworkCore.InMemory), s
 
 ### XP og test
 
-- **Domenelaget** testes isoleret uden afhængigheder.
+- **Domænelaget** testes isoleret uden afhængigheder.
 - **Controllerene** testes med in-memory database, så HTTP-laget og databaselaget verificeres samlet.
 
 Områder der ikke er dækket af tests:
