@@ -348,7 +348,7 @@ I Docker sætttes ApiBaseUrl automatisk til http://slottet-api:8080 af docker-co
 
 ## Revisionslog
 
-Alle dataopdaterende handlinger skriver en raekke til AuditLogs-tabellen med UserId, UserName, Action, Entity, EntityId og TimeStamp. Medarbejdersletning/Borger er en hard delete, der fjerner alle tilknyttede personoplysninger (GDPR).
+Alle dataopdaterende handlinger skriver en raekke til AuditLogs-tabellen med UserId, UserName, Action, Entity, EntityId og TimeStamp. Medarbejdersletning/Borgersletning er en hard delete, der fjerner alle tilknyttede personoplysninger (GDPR).
 
 ---
 
