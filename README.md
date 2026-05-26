@@ -111,7 +111,7 @@ dotnet ef database update
 
 ## Docker-deployment (distribueret)
 
-API'et og Blazor kører som separate containere paa et internt bridge-netvaerk. Blazor kalder API'et via det interne container-hostname slottet-api.
+API'et og Blazor kører som separate containere på et internt bridge-netvaerk. Blazor kalder API'et via det interne container-hostname slottet-api.
 
 ### 1. Konfigurer .env
 
@@ -128,7 +128,7 @@ Minimumskraevede variabler:
 | DB_NAME       | Databasenavn                         |
 | DB_USER       | Databasebrugernavn                   |
 | DB_PASSWORD   | Databaseadgangskode                  |
-| JWT_KEY       | JWT-signeringsnoegle, min. 32 tegn   |
+| JWT_KEY       | JWT-signeringsnøgle, min. 32 tegn   |
 
 ### 2. Byg og start
 
@@ -140,7 +140,7 @@ docker compose up --build -d
 - API health check: http://localhost:5000/health
 - Blazor frontend:  http://localhost:5050
 
-Blazor venter paa, at API'ets health check passerer, inden det starter.
+Blazor venter på, at API'ets health check passerer, inden det starter.
 
 ### 3. Stop
 
@@ -148,18 +148,18 @@ Blazor venter paa, at API'ets health check passerer, inden det starter.
 docker compose down
 ```
 
-### Netvaerkstopologi
+### Netværkstopologi
 
 ```
 Vaertsmaskine
   port 5000 --> slottet-api:8080     (API-container)
   port 5050 --> slottet-blazor:8080  (Blazor-container)
 
-slottet-net (internt bridge-netvaerk)
+slottet-net (internt bridge-netværk)
   slottet-blazor --> http://slottet-api:8080
 ```
 
-Portene kan tilsidesaettes via API_PORT og BLAZOR_PORT i .env.
+Portene kan tilsidesættes via API_PORT og BLAZOR_PORT i .env.
 
 ---
 
