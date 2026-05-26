@@ -72,7 +72,7 @@ Slottet/
 
 ## Lokal udvikling (uden Docker)
 
-### 1. Konfigurer miljovariabler
+### 1. Konfigurer miljøvariabler
 
 ```
 cp Slottet/.env.example Slottet/.env
