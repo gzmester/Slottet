@@ -62,7 +62,7 @@ Slottet/
 
 ---
 
-## Forudsaetninger
+## Forudsættninger
 
 - .NET 9 SDK
 - Docker Desktop (til containeriseret deployment)
@@ -96,7 +96,7 @@ cd Slottet/SlottetBlazor
 dotnet run
 ```
 
-Starter på http://localhost:5140. Laeder ApiBaseUrl fra appsettings.json (standard: http://localhost:5000). Tilsidesaet ved at saette miljøvariablen ApiBaseUrl inden start.
+Starter på http://localhost:5140. Laeder ApiBaseUrl fra appsettings.json (standard: http://localhost:5000). Tilsidesætt ved at sættte miljøvariablen ApiBaseUrl inden start.
 
 ### 4. Databasemigrationer
 
@@ -204,7 +204,7 @@ Tokens er ikke revocerbare server-side. Logout rydder kun tokenet fra localStora
 | Vagtansvarlig   | RequireScheduler | Vagtplanlægning, læsning af alle medarbejdere       |
 | Plejepersonale  | RequireCareStaff | Læse/opdatere beboere, registrere vagter og statusser, humør, og risiko |
 
-Første login returnerer requiresSetup: true, hvis medarbejderen endnu ikke har en PIN, hvilket udloser PIN-opsaetningsmodalen.
+Første login returnerer requiresSetup: true, hvis medarbejderen endnu ikke har en PIN, hvilket udloser PIN-opsættningsmodalen.
 
 ---
 
@@ -232,7 +232,7 @@ __ (dobbelt understregning) er .NET-konfigurationssektionsseparatoren. Jwt__Key 
 |------------|---------|------------------------|-------------------|
 | ApiBaseUrl | Nej     | http://localhost:5000  | API'ets basis-URL |
 
-I Docker saettes ApiBaseUrl automatisk til http://slottet-api:8080 af docker-compose.yml.
+I Docker sætttes ApiBaseUrl automatisk til http://slottet-api:8080 af docker-compose.yml.
 
 ---
 
