@@ -370,7 +370,7 @@ Projektet er hostet på en privat Linux-server. Gruppen har valgt at bruge grati
 - **Let's Encrypt** - gratis TLS-certifikater via ACME-protokollen. Certifikaterne fornyes automatisk.
 - **Nginx Proxy Manager** - kører i Docker og haandterer reverse proxy, SSL-terminering og certifikatfornyelse.
 
-### Overblik over produktionsmiljo
+### Overblik over produktionsmiljø
 
 ```
 Internettet
@@ -386,7 +386,7 @@ DuckDNS opdaterer DNS-posten når serverens IP aendres (cron-job eller DuckDNS-k
 Let's Encrypt-certifikat udstedes til DuckDNS-hostname og fornyes automatisk af Nginx Proxy Manager.
 ```
 
-### Hvad er kørendes i Docker på serveren
+### Hvad er kørende i Docker på serveren
 
 | Container            | Beskrivelse                                      |
 |----------------------|--------------------------------------------------|
