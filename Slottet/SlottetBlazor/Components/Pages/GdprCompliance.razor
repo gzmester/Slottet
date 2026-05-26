@@ -238,7 +238,7 @@
             var response = await http.DeleteAsync($"api/Resident/{selectedResident.ResidentID}");
             if (response.IsSuccessStatusCode)
             {
-                residentSuccess = $"✅ {expectedName} er permanent slettet og logget i AuditLog.";
+                residentSuccess = $"{expectedName} er permanent slettet og logget i AuditLog.";
                 residents.RemoveAll(r => r.ResidentID == selectedResident.ResidentID);
                 selectedResident = null;
                 residentSearch = string.Empty;
@@ -270,7 +270,7 @@
             var response = await http.DeleteAsync($"api/employees/{selectedEmployee.Id}");
             if (response.IsSuccessStatusCode)
             {
-                employeeSuccess = $"✅ {expectedName} er permanent slettet og logget i AuditLog.";
+                employeeSuccess = $"{expectedName} er permanent slettet og logget i AuditLog.";
                 employees.RemoveAll(e => e.Id == selectedEmployee.Id);
                 selectedEmployee = null;
                 employeeSearch = string.Empty;
