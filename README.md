@@ -368,7 +368,7 @@ Projektet er hostet på en privat Linux-server. Gruppen har valgt at bruge grati
 
 - **DuckDNS** - gratis dynamisk DNS. Serveren får et fast hostname (*.duckdns.org) selvom den offentlige IP aendrer sig.
 - **Let's Encrypt** - gratis TLS-certifikater via ACME-protokollen. Certifikaterne fornyes automatisk.
-- **Nginx Proxy Manager** - kører i Docker og haandterer reverse proxy, SSL-terminering og certifikatfornyelse.
+- **Nginx Proxy Manager** - kører i Docker og håndterer reverse proxy, SSL-terminering og certifikatfornyelse.
 
 ### Overblik over produktionsmiljø
 
@@ -377,7 +377,7 @@ Internettet
   |
   | HTTPS (port 443)
   v
-Nginx Proxy Manager  (Docker, haandterer TLS + reverse proxy)
+Nginx Proxy Manager  (Docker, håndterer TLS + reverse proxy)
   |
   +-- /api/*  --> slottet-api:8080
   +-- /*      --> slottet-blazor:8080
@@ -413,7 +413,7 @@ dotnet test
 | Testklasse                       | Hvad testes                                                   |
 |----------------------------------|---------------------------------------------------------------|
 | ResidentControllerTests          | GetAll, GetById (fundet/ikke fundet), GetPublic med filter    |
-| DepartmentTasksControllerTests   | Fuld CRUD: opret, opdater, slet, 404-haandtering              |
+| DepartmentTasksControllerTests   | Fuld CRUD: opret, opdater, slet, 404-håndtering              |
 | DomainEntityTests                | Domaenobjekter: Employee.HasPincode, RiskLevel, Mood, AuditLog |
 
 Testene bruger en in-memory database (Microsoft.EntityFrameworkCore.InMemory), så der kræves ingen databaseforbindelse for at køre dem.
