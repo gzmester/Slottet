@@ -22,6 +22,9 @@ namespace API.Controllers
             _db = db;
         }
 
+        private int? CurrentUserId => int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : null;
+        private string CurrentUserName => User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown";
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ResidentResponseDto>>> GetAll()
         {
@@ -86,6 +89,7 @@ namespace API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Policy = "RequireCareStaff")]
         public async Task<ActionResult<ResidentResponseDto>> Update(int id, UpdateResidentRequestDto updateDto)
         {
             
@@ -141,8 +145,8 @@ namespace API.Controllers
                     Action   = "Risikoniveau opdateret",
                     Entity   = "Resident",
                     EntityId = id.ToString(),
-                    UserId   = null,
-                    UserName = "unknown"
+                    UserId   = CurrentUserId,
+                    UserName = CurrentUserName
                 });
             }
 
@@ -154,8 +158,8 @@ namespace API.Controllers
                     Action   = "Humør opdateret",
                     Entity   = "Resident",
                     EntityId = id.ToString(),
-                    UserId   = null,
-                    UserName = "unknown"
+                    UserId   = CurrentUserId,
+                    UserName = CurrentUserName
                 });
             }
 
@@ -195,8 +199,8 @@ namespace API.Controllers
                 Action   = $"GDPR sletning: Borger '{name}' (ID {id}) og al tilknyttet data er permanent slettet.",
                 Entity   = "Resident",
                 EntityId = id.ToString(),
-                UserId   = null,
-                UserName = "unknown"
+                UserId   = CurrentUserId,
+                UserName = CurrentUserName
             });
             await _db.SaveChangesAsync();
 
@@ -227,8 +231,8 @@ namespace API.Controllers
                 Action   = "Borger oprettet",
                 Entity   = "Resident",
                 EntityId = resident.ResidentID.ToString(),
-                UserId   = null,
-                UserName = "unknown"
+                UserId   = CurrentUserId,
+                UserName = CurrentUserName
             });
             await _db.SaveChangesAsync();
 

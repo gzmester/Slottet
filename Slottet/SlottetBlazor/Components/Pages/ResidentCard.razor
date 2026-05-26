@@ -1,5 +1,6 @@
 ﻿@using Application.DTOs.Resident
 @inject IHttpClientFactory HttpClientFactory
+@inject IJSRuntime JS
 <div class="resident-card-container @(!IsLoggedIn ? "card-readonly" : "")">
     <table class="resident-header-table">
         <tr>
@@ -230,6 +231,9 @@
         try
         {
             var http = HttpClientFactory.CreateClient("API");
+            var token = await JS.InvokeAsync<string?>("localStorage.getItem", "authToken");
+            if (!string.IsNullOrEmpty(token))
+                http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             var updateRequest = new
             {

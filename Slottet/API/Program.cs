@@ -84,9 +84,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddCors(options =>
 {
+    var corsOrigins = (Environment.GetEnvironmentVariable("BLAZOR_ORIGIN")
+        ?? "http://localhost:5140,https://localhost:7158,http://localhost:5050")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
     options.AddPolicy("BlazorClient", policy =>
     {
-        policy.WithOrigins("http://localhost:5140", "https://localhost:7158", "http://localhost:5050")
+        policy.WithOrigins(corsOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -94,6 +98,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddHostedService<MidnightResetService>();
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -131,6 +136,7 @@ app.UseCors("BlazorClient");
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHealthChecks("/health");
 app.MapControllers();
 
 app.Run();
