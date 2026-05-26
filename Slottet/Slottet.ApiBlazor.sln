@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "Application\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "Domain\Domain.csproj", "{C7F7C5BA-1D59-4EF0-A2AB-711BA65E5E52}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Slottet.Tests", "Slottet.Tests\Slottet.Tests.csproj", "{2E149B4D-4183-4B9F-9C7D-9F461201E0E6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -83,6 +85,18 @@ Global
 		{C7F7C5BA-1D59-4EF0-A2AB-711BA65E5E52}.Release|x64.Build.0 = Release|Any CPU
 		{C7F7C5BA-1D59-4EF0-A2AB-711BA65E5E52}.Release|x86.ActiveCfg = Release|Any CPU
 		{C7F7C5BA-1D59-4EF0-A2AB-711BA65E5E52}.Release|x86.Build.0 = Release|Any CPU
+		{2E149B4D-4183-4B9F-9C7D-9F461201E0E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E149B4D-4183-4B9F-9C7D-9F461201E0E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E149B4D-4183-4B9F-9C7D-9F461201E0E6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2E149B4D-4183-4B9F-9C7D-9F461201E0E6}.Debug|x64.Build.0 = Debug|Any CPU
+		{2E149B4D-4183-4B9F-9C7D-9F461201E0E6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2E149B4D-4183-4B9F-9C7D-9F461201E0E6}.Debug|x86.Build.0 = Debug|Any CPU
+		{2E149B4D-4183-4B9F-9C7D-9F461201E0E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E149B4D-4183-4B9F-9C7D-9F461201E0E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E149B4D-4183-4B9F-9C7D-9F461201E0E6}.Release|x64.ActiveCfg = Release|Any CPU
+		{2E149B4D-4183-4B9F-9C7D-9F461201E0E6}.Release|x64.Build.0 = Release|Any CPU
+		{2E149B4D-4183-4B9F-9C7D-9F461201E0E6}.Release|x86.ActiveCfg = Release|Any CPU
+		{2E149B4D-4183-4B9F-9C7D-9F461201E0E6}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

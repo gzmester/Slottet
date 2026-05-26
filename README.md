@@ -78,7 +78,7 @@ Slottet/
 cp Slottet/.env.example Slottet/.env
 ```
 
-Udfyld databaseoplysninger og en JWT-signeringsnoegle. API'et laeder automatisk .env-filen ved opstart via DotNetEnv. Filen resolves ved at traversere opad fra arbejdskataloget, saa placering ved solution-roden daekker API-projektet.
+Udfyld databaseoplysninger og en JWT-signeringsnoegle. API'et laeder automatisk .env-filen ved opstart via DotNetEnv. Filen resolves ved at traversere opad fra arbejdskataloget, så placering ved solution-roden daekker API-projektet.
 
 ### 2. Start API'et
 
@@ -87,7 +87,7 @@ cd Slottet/API
 dotnet run
 ```
 
-Starter paa http://localhost:5000 (se launchSettings.json).
+Starter på http://localhost:5000 (se launchSettings.json).
 
 ### 3. Start Blazor
 
@@ -96,7 +96,7 @@ cd Slottet/SlottetBlazor
 dotnet run
 ```
 
-Starter paa http://localhost:5140. Laeder ApiBaseUrl fra appsettings.json (standard: http://localhost:5000). Tilsidesaet ved at saette miljøvariablen ApiBaseUrl inden start.
+Starter på http://localhost:5140. Laeder ApiBaseUrl fra appsettings.json (standard: http://localhost:5000). Tilsidesaet ved at saette miljøvariablen ApiBaseUrl inden start.
 
 ### 4. Databasemigrationer
 
@@ -348,7 +348,7 @@ I Docker saettes ApiBaseUrl automatisk til http://slottet-api:8080 af docker-com
 
 ## Revisionslog
 
-Alle dataopdaterende handlinger skriver en raekke til AuditLogs-tabellen med UserId, UserName, Action, Entity, EntityId og TimeStamp. Medarbejdersletning er en hard delete, der fjerner alle tilknyttede personoplysninger (GDPR).
+Alle dataopdaterende handlinger skriver en raekke til AuditLogs-tabellen med UserId, UserName, Action, Entity, EntityId og TimeStamp. Medarbejdersletning/Borger er en hard delete, der fjerner alle tilknyttede personoplysninger (GDPR).
 
 ---
 
@@ -365,3 +365,72 @@ Alle dataopdaterende handlinger skriver en raekke til AuditLogs-tabellen med Use
 ## Licens
 
 Eksamensprojekt.
+
+
+---
+
+## Hosting
+
+Projektet er hostet på en privat Linux-server. Gruppen har valgt at bruge gratis vaerktoejer til at eksponere det på internettet:
+
+- **DuckDNS** - gratis dynamisk DNS. Serveren får et fast hostname (*.duckdns.org) selvom den offentlige IP aendrer sig.
+- **Let's Encrypt** - gratis TLS-certifikater via ACME-protokollen. Certifikaterne fornyes automatisk.
+- **Nginx Proxy Manager** - kører i Docker og haandterer reverse proxy, SSL-terminering og certifikatfornyelse.
+
+### Overblik over produktionsmiljo
+
+```
+Internettet
+  |
+  | HTTPS (port 443)
+  v
+Nginx Proxy Manager  (Docker, haandterer TLS + reverse proxy)
+  |
+  +-- /api/*  --> slottet-api:8080
+  +-- /*      --> slottet-blazor:8080
+
+DuckDNS opdaterer DNS-posten når serverens IP aendres (cron-job eller DuckDNS-klient).
+Let's Encrypt-certifikat udstedes til DuckDNS-hostname og fornyes automatisk af Nginx Proxy Manager.
+```
+
+### Hvad er kørendes i Docker på serveren
+
+| Container            | Beskrivelse                                      |
+|----------------------|--------------------------------------------------|
+| slottet-api          | API-containeren (bygget fra API/Dockerfile)      |
+| slottet-blazor       | Blazor-containeren (bygget fra SlottetBlazor/...) |
+| nginx-proxy-manager  | Reverse proxy + SSL-terminering                  |
+| DuckDNS-klient       | Holder DNS-posten opdateret                      |
+
+---
+
+## Tests
+
+Projektet indeholder et dedikeret test-projekt: ```Slottet.Tests```.
+
+### kør tests
+
+```
+cd Slottet/Slottet.Tests
+dotnet test
+```
+
+### Teststruktur
+
+| Testklasse                       | Hvad testes                                                   |
+|----------------------------------|---------------------------------------------------------------|
+| ResidentControllerTests          | GetAll, GetById (fundet/ikke fundet), GetPublic med filter    |
+| DepartmentTasksControllerTests   | Fuld CRUD: opret, opdater, slet, 404-haandtering              |
+| DomainEntityTests                | Domaenobjekter: Employee.HasPincode, RiskLevel, Mood, AuditLog |
+
+Testene bruger en in-memory database (Microsoft.EntityFrameworkCore.InMemory), så der kræves ingen databaseforbindelse for at køre dem.
+
+### XP og test
+
+- **Domenelaget** testes isoleret uden afhængigheder.
+- **Controllerene** testes med in-memory database, så HTTP-laget og databaselaget verificeres samlet.
+
+Områder der ikke er dækket af tests:
+- Autentificeringscontrolleren (kræver mock af UserManager/SignInManager)
+- Blazor-komponenterne (kraver Bunit eller Playwright)
+- Integrationstests mod rigtig database
