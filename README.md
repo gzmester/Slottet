@@ -11,6 +11,8 @@ Systemet består af to uafhængigt deploybare applikationer:
 
 ## Arkitektur
 
+### Systemtopologi
+
 ```
 Browser
   |
@@ -28,6 +30,38 @@ MariaDB / MySQL
 ```
 
 Da Blazor kører som en Server-app, afvikles al komponentlogik på serveren. HTTP-kald til API'et er dermed server-til-server og passerer ikke gennem brugerens browser.
+
+### Clean Architecture
+
+API-projektet følger Clean Architecture med tre lag.
+
+```
+┌──────────────────────────────────────────────────────┐
+│  API (Præsentationslag)                              │
+│  Controllers · Middleware · Program.cs               │
+│  Afhænger af: Application                           │
+├──────────────────────────────────────────────────────┤
+│  Application (Applikationslag)                       │
+│  DTOs · IRepository-interfaces                      │
+│  Afhænger af: Domain                                │
+├──────────────────────────────────────────────────────┤
+│  Domain (Domænelag)                                  │
+│  Entiteter · Enums · Domæneregler                   │
+│  Afhænger af: ingenting                             │
+├──────────────────────────────────────────────────────┤
+│  Infrastructure (Infrastrukturlag)                   │
+│  EF Core DbContext · Repository-implementeringer    │
+│  Migrationer · Seed-data                            │
+│  Afhænger af: Application + Domain                  │
+└──────────────────────────────────────────────────────┘
+```
+
+**Repository-mønsteret** er implementeret for alle 11 domæneområder. Interfaces defineres i `Application/Interfaces/Repositories/` og implementeres i `Infrastructure/Repositories/`. Controllerne afhænger udelukkende af interfaces — aldrig af konkrete klasser eller EF Core direkte.
+
+Dette betyder:
+- Controllere kan unit-testes uden en rigtig database (in-memory EF brugt i tests)
+- Infrastructure-laget kan udskiftes uden at ændre applikations- eller domænelaget
+- Afhængighedspielen peger altid indad mod domænet
 
 ---
 
@@ -49,16 +83,50 @@ Da Blazor kører som en Server-app, afvikles al komponentlogik på serveren. HTT
 ```
 Slottet/
   Slottet/
-    API/                  Web API - controllere, middleware, services
-    SlottetBlazor/        Blazor Server frontend
-    Application/          DTO'er og applikationslagsgraenseflader
-    Domain/               Entiteter og enums
-    Infrastructure/       EF Core DbContext, migrationer, seed-data
+    API/
+      Controllers/        12 controllere - afhænger kun af IRepository-interfaces
+      Middleware/         JWT-validering og fejlhåndtering
+      Program.cs          DI-registrering, middleware-pipeline
+
+    Application/
+      DTOs/               Request- og response-DTO'er for alle domæneområder
+      Interfaces/
+        Repositories/     11 IRepository-interfaces (kontrakterne)
+
+    Domain/
+      Entities/           EF Core-entitetsklasser
+      Enums/              Domæneenums (RiskLevel, Mood, ShiftType m.fl.)
+
+    Infrastructure/
+      Data/               ApplicationDbContext (IdentityDbContext<Employee>)
+      Migrations/         EF Core-migreringsfiler
+      Repositories/       11 EF Core repository-implementeringer
+      Seeders/            Initial seed-data
+
+    SlottetBlazor/        Blazor Server frontend - kalder API over HTTP
+    Slottet.Tests/        xUnit-enhedstests (27 tests, in-memory EF)
+
     docker-compose.yml    Orkestrerer API + Blazor som separate services
     .env                  Lokale hemmeligheder (git-ignoreret, commit aldrig)
-    .env.example          Skabelon - kopier til .env og udfyld vaerdier
+    .env.example          Skabelon - kopier til .env og udfyld værdier
     README.md             Udviklerreference
 ```
+
+### Repository-interfaces
+
+| Interface                    | Ansvar                                      |
+|------------------------------|---------------------------------------------|
+| `IResidentRepository`        | Beboere inkl. medicin, statusser, lokation  |
+| `IShiftRepository`           | Vagtregistrering                            |
+| `IMedicinRepository`         | Fast medicin                                |
+| `IPNMedicinRepository`       | PN-medicin (ved behov)                      |
+| `IPhoneNumberRepository`     | Arbejdstelefoner                            |
+| `ISpecialTasksRepository`    | Ansvarsroller med tilknyttede medarbejdere  |
+| `IDepartmentTasksRepository` | Afdelingsopgaver                            |
+| `ILocationRepository`        | Lokationer/afdelinger                       |
+| `IAuthorizationRepository`   | Autorisationsroller (read-only)             |
+| `IAuditLogRepository`        | Revisionslog                                |
+| `IEmployeeRepository`        | Medarbejder-specifikke EF-operationer       |
 
 ---
 
@@ -346,9 +414,22 @@ I Docker sætttes ApiBaseUrl automatisk til http://slottet-api:8080 af docker-co
 
 ---
 
+## Tests
+
+Projektet har 27 unit-tests i `Slottet.Tests/` skrevet med xUnit og in-memory EF Core.
+
+```
+cd Slottet/Slottet.Tests
+dotnet test
+```
+
+Testene dækker `ResidentController` og `DepartmentTasksController` samt domain-entiteter. Da controllerne afhænger af repository-interfaces, instansieres de konkrete repository-klasser direkte i testene med en in-memory database — ingen mocking-framework nødvendigt.
+
+---
+
 ## Revisionslog
 
-Alle dataopdaterende handlinger skriver en raekke til AuditLogs-tabellen med UserId, UserName, Action, Entity, EntityId og TimeStamp. Medarbejdersletning/Borgersletning er en hard delete, der fjerner alle tilknyttede personoplysninger (GDPR).
+Alle dataopdaterende handlinger skriver en række til AuditLogs-tabellen med UserId, UserName, Action, Entity, EntityId og TimeStamp. Medarbejdersletning/Borgersletning er en hard delete, der fjerner alle tilknyttede personoplysninger (GDPR).
 
 ---
 

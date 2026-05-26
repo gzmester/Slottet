@@ -1,10 +1,8 @@
-using Microsoft.AspNetCore.Http;
 using Application.DTOs.Resident;
+using Application.Interfaces.Repositories;
 using Domain.Entities;
 using Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
-using Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
@@ -15,11 +13,13 @@ namespace API.Controllers
     //[Authorize]
     public class ResidentController : ControllerBase
     {
-        private readonly ApplicationDbContext _db;
+        private readonly IResidentRepository _repo;
+        private readonly IAuditLogRepository _auditLog;
 
-        public ResidentController(ApplicationDbContext db)
+        public ResidentController(IResidentRepository repo, IAuditLogRepository auditLog)
         {
-            _db = db;
+            _repo     = repo;
+            _auditLog = auditLog;
         }
 
         private int? CurrentUserId => int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : null;
@@ -28,30 +28,14 @@ namespace API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ResidentResponseDto>>> GetAll()
         {
-            var residents = await _db.Residents
-                .Include(r => r.Location)
-                .Include(r => r.Medicins)
-                .Include(r => r.PNMedicins)
-                .Include(r => r.Statuses)
-                .ToListAsync();
-
-            var result = residents.Select(MapToResponseDto);
-
-            return Ok(result);
+            var residents = await _repo.GetAllAsync();
+            return Ok(residents.Select(MapToResponseDto));
         }
 
-        // GDPR-venligt public endpoint til storskærm — ingen personhenførbare data
         [HttpGet("public")]
         public async Task<ActionResult<IEnumerable<ResidentPublicDto>>> GetPublic([FromQuery] int? locationId)
         {
-            var query = _db.Residents
-                .Include(r => r.Medicins)
-                .AsQueryable();
-
-            if (locationId.HasValue)
-                query = query.Where(r => r.LocationID == locationId.Value);
-
-            var residents = await query.ToListAsync();
+            var residents = await _repo.GetPublicAsync(locationId);
 
             var result = residents.Select(r => new ResidentPublicDto
             {
@@ -75,12 +59,7 @@ namespace API.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<ResidentResponseDto>> GetById(int id)
         {
-            var resident = await _db.Residents
-                .Include(r => r.Location)
-                .Include(r => r.Medicins)
-                .Include(r => r.PNMedicins)
-                .Include(r => r.Statuses)
-                .FirstOrDefaultAsync(r => r.ResidentID == id);
+            var resident = await _repo.GetByIdAsync(id);
 
             if (resident == null)
                 return NotFound($"Resident with ID {id} not found");
@@ -93,9 +72,7 @@ namespace API.Controllers
         public async Task<ActionResult<ResidentResponseDto>> Update(int id, UpdateResidentRequestDto updateDto)
         {
             
-            var resident = await _db.Residents
-                .Include(r => r.Statuses)
-                .FirstOrDefaultAsync(r => r.ResidentID == id);
+            var resident = await _repo.GetByIdWithStatusesAsync(id);
 
             if (resident == null)
                 return NotFound($"Resident with ID {id} not found");
@@ -127,19 +104,19 @@ namespace API.Controllers
             {
                 var newStatus = new Status
                 {
-                    ResidentID = resident.ResidentID,
+                    ResidentID  = resident.ResidentID,
                     Description = updateDto.Status,
-                    Time = DateTime.Now
+                    Time        = DateTime.Now
                 };
-                _db.Statuses.Add(newStatus);
+                _repo.AddStatus(newStatus);
             }
 
-            _db.Residents.Update(resident);
-            await _db.SaveChangesAsync();
+            _repo.Update(resident);
+            await _repo.SaveChangesAsync();
 
-            if( oldRiskLevel != resident.RiskLevel)
+            if (oldRiskLevel != resident.RiskLevel)
             {
-                await _db.AuditLogs.AddAsync(new AuditLog
+                await _auditLog.AddAsync(new AuditLog
                 {
                     LogType  = "Activity",
                     Action   = "Risikoniveau opdateret",
@@ -150,9 +127,9 @@ namespace API.Controllers
                 });
             }
 
-            if(oldMood != resident.Mood)
+            if (oldMood != resident.Mood)
             {
-                await _db.AuditLogs.AddAsync(new AuditLog
+                await _auditLog.AddAsync(new AuditLog
                 {
                     LogType  = "Activity",
                     Action   = "Humør opdateret",
@@ -163,15 +140,10 @@ namespace API.Controllers
                 });
             }
 
-            await _db.SaveChangesAsync();
+            await _auditLog.SaveChangesAsync();
 
             // Reload to get updated relationships
-            resident = await _db.Residents
-                .Include(r => r.Location)
-                .Include(r => r.Medicins)
-                .Include(r => r.PNMedicins)
-                .Include(r => r.Statuses)
-                .FirstOrDefaultAsync(r => r.ResidentID == id);
+            resident = await _repo.GetByIdAsync(id);
 
             return Ok(MapToResponseDto(resident!));
         }
@@ -179,21 +151,17 @@ namespace API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var resident = await _db.Residents
-                .Include(r => r.Medicins)
-                .Include(r => r.PNMedicins)
-                .Include(r => r.Statuses)
-                .FirstOrDefaultAsync(r => r.ResidentID == id);
+            var resident = await _repo.GetByIdAsync(id);
 
             if (resident == null)
                 return NotFound($"Resident with ID {id} not found");
 
             var name = $"{resident.FirstName} {resident.LastName}";
 
-            _db.Residents.Remove(resident);
-            await _db.SaveChangesAsync();
+            _repo.Remove(resident);
+            await _repo.SaveChangesAsync();
 
-            await _db.AuditLogs.AddAsync(new AuditLog
+            await _auditLog.AddAsync(new AuditLog
             {
                 LogType  = "GDPR",
                 Action   = $"GDPR sletning: Borger '{name}' (ID {id}) og al tilknyttet data er permanent slettet.",
@@ -202,7 +170,7 @@ namespace API.Controllers
                 UserId   = CurrentUserId,
                 UserName = CurrentUserName
             });
-            await _db.SaveChangesAsync();
+            await _auditLog.SaveChangesAsync();
 
             return NoContent();
         }
@@ -222,10 +190,10 @@ namespace API.Controllers
                 Mood = createDto.Mood
             };
 
-            _db.Residents.Add(resident);
-            await _db.SaveChangesAsync();
+            _repo.Add(resident);
+            await _repo.SaveChangesAsync();
 
-            await _db.AuditLogs.AddAsync(new AuditLog
+            await _auditLog.AddAsync(new AuditLog
             {
                 LogType  = "Activity",
                 Action   = "Borger oprettet",
@@ -234,12 +202,11 @@ namespace API.Controllers
                 UserId   = CurrentUserId,
                 UserName = CurrentUserName
             });
-            await _db.SaveChangesAsync();
+            await _auditLog.SaveChangesAsync();
 
-            //Hent lokation for at få navnet med i response
-            await _db.Entry(resident).Reference(r => r.Location).LoadAsync();
-            
-            return CreatedAtAction(nameof(GetById), new { id = resident.ResidentID }, MapToResponseDto(resident));
+            var created = await _repo.GetByIdAsync(resident.ResidentID);
+
+            return CreatedAtAction(nameof(GetById), new { id = resident.ResidentID }, MapToResponseDto(created!));
 
         }
 

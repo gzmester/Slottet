@@ -1,6 +1,7 @@
 using DotNetEnv;
 using Infrastructure.Data;
 using Infrastructure.Seed;
+using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 using Domain.Entities;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using API.Services;
+using Application.Interfaces.Repositories;
 
 // Load .env file for local development
 Env.TraversePath().Load();
@@ -81,6 +83,19 @@ var connectionString = dbHost is not null
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 36))));
+
+// Repositories
+builder.Services.AddScoped<IResidentRepository, ResidentRepository>();
+builder.Services.AddScoped<IShiftRepository, ShiftRepository>();
+builder.Services.AddScoped<IMedicinRepository, MedicinRepository>();
+builder.Services.AddScoped<IPNMedicinRepository, PNMedicinRepository>();
+builder.Services.AddScoped<IPhoneNumberRepository, PhoneNumberRepository>();
+builder.Services.AddScoped<ISpecialTasksRepository, SpecialTasksRepository>();
+builder.Services.AddScoped<IDepartmentTasksRepository, DepartmentTasksRepository>();
+builder.Services.AddScoped<ILocationRepository, LocationRepository>();
+builder.Services.AddScoped<IAuthorizationRepository, AuthorizationRepository>();
+builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 
 builder.Services.AddCors(options =>
 {

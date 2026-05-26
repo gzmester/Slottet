@@ -1,7 +1,6 @@
 using Application.DTOs.SpecialTask;
-using Infrastructure.Data;
+using Application.Interfaces.Repositories;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
@@ -9,11 +8,11 @@ namespace API.Controllers;
 [Route("api/[controller]")]
 public class SpecialTasksController : ControllerBase
 {
-    private readonly ApplicationDbContext _db;
+    private readonly ISpecialTasksRepository _repo;
 
-    public SpecialTasksController(ApplicationDbContext db)
+    public SpecialTasksController(ISpecialTasksRepository repo)
     {
-        _db = db;
+        _repo = repo;
     }
 
     // GET /api/specialtasks
@@ -21,9 +20,7 @@ public class SpecialTasksController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<SpecialTaskResponseDto>>> GetAll()
     {
-        var roles = await _db.ResponsibilityRoles
-            .Include(r => r.Employees)
-            .ToListAsync();
+        var roles = await _repo.GetAllAsync();
 
         return Ok(roles.Select(r => new SpecialTaskResponseDto
         {
@@ -51,16 +48,14 @@ public class SpecialTasksController : ControllerBase
 
         if (dto.EmployeeIds.Any())
         {
-            var employees = await _db.Users
-                .Where(e => dto.EmployeeIds.Contains(e.Id))
-                .ToListAsync();
+            var employees = await _repo.GetEmployeesByIdsAsync(dto.EmployeeIds);
 
             foreach (var emp in employees)
                 role.Employees.Add(emp);
         }
 
-        _db.ResponsibilityRoles.Add(role);
-        await _db.SaveChangesAsync();
+        _repo.Add(role);
+        await _repo.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetAll), new SpecialTaskResponseDto
         {
@@ -80,9 +75,7 @@ public class SpecialTasksController : ControllerBase
     [HttpPut("{id}/employees")]
     public async Task<ActionResult<SpecialTaskResponseDto>> UpdateEmployees(int id, SpecialTaskUpdateEmployeesDto dto)
     {
-        var role = await _db.ResponsibilityRoles
-            .Include(r => r.Employees)
-            .FirstOrDefaultAsync(r => r.RoleID == id);
+        var role = await _repo.GetByIdWithEmployeesAsync(id);
 
         if (role is null) return NotFound();
 
@@ -90,15 +83,13 @@ public class SpecialTasksController : ControllerBase
 
         if (dto.EmployeeIds.Any())
         {
-            var employees = await _db.Users
-                .Where(e => dto.EmployeeIds.Contains(e.Id))
-                .ToListAsync();
+            var employees = await _repo.GetEmployeesByIdsAsync(dto.EmployeeIds);
 
             foreach (var emp in employees)
                 role.Employees.Add(emp);
         }
 
-        await _db.SaveChangesAsync();
+        await _repo.SaveChangesAsync();
 
         return Ok(new SpecialTaskResponseDto
         {
@@ -117,11 +108,11 @@ public class SpecialTasksController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var role = await _db.ResponsibilityRoles.FindAsync(id);
+        var role = await _repo.GetByIdWithEmployeesAsync(id);
         if (role is null) return NotFound();
 
-        _db.ResponsibilityRoles.Remove(role);
-        await _db.SaveChangesAsync();
+        _repo.Remove(role);
+        await _repo.SaveChangesAsync();
         return NoContent();
     }
 }

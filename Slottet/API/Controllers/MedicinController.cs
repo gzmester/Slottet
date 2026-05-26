@@ -1,8 +1,7 @@
-using Infrastructure.Data;
+using Application.Interfaces.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Domain.Entities;
 using Application.DTOs.Resident;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
@@ -13,11 +12,13 @@ namespace API.Controllers;
 [Route("api/[controller]")]
 public class MedicinController : ControllerBase
 {
-    private readonly ApplicationDbContext _db;
+    private readonly IMedicinRepository _repo;
+    private readonly IAuditLogRepository _auditLog;
 
-    public MedicinController(ApplicationDbContext db)
+    public MedicinController(IMedicinRepository repo, IAuditLogRepository auditLog)
     {
-        _db = db;
+        _repo     = repo;
+        _auditLog = auditLog;
     }
 
     //POST /api/medicin
@@ -35,11 +36,11 @@ public class MedicinController : ControllerBase
         };
 
         //Gem medicinen i databasen
-        _db.Medicins.Add(medicin);
-        await _db.SaveChangesAsync();
+        _repo.Add(medicin);
+        await _repo.SaveChangesAsync();
 
         //Log oprettelsen i AuditLog
-        await _db.AuditLogs.AddAsync(new AuditLog
+        await _auditLog.AddAsync(new AuditLog
         {
             LogType = "Activity",
             Action = "Medicin oprettet",
@@ -48,7 +49,7 @@ public class MedicinController : ControllerBase
             UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
             UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
         });
-        await _db.SaveChangesAsync();
+        await _auditLog.SaveChangesAsync();
 
         //retturnere den oprettede medicin som DTO
         return Ok(MapToResponseDto(medicin));
@@ -58,16 +59,16 @@ public class MedicinController : ControllerBase
     [HttpPatch("{id}/taken")]
     public async Task<IActionResult> SetTaken(int id, [FromQuery] bool isTaken)
     {
-        var medicin = await _db.Medicins.FindAsync(id);
+        var medicin = await _repo.GetByIdAsync(id);
 
         if (medicin is null)
             return NotFound();
 
         medicin.IsTaken = isTaken;
-        await _db.SaveChangesAsync();
+        await _repo.SaveChangesAsync();
 
         //Log medicin taget
-        await _db.AuditLogs.AddAsync(new AuditLog
+        await _auditLog.AddAsync(new AuditLog
         {
             LogType  = "Activity",
             Action   = isTaken ? "Medicin taget" : "Medicin fortrudt",
@@ -76,7 +77,7 @@ public class MedicinController : ControllerBase
             UserId   = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
             UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
         });
-        await _db.SaveChangesAsync();
+        await _auditLog.SaveChangesAsync();
 
         return NoContent();
 
@@ -87,16 +88,16 @@ public class MedicinController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateMedicin(int id, [FromBody] UpdateMedicinRequest request)
     {
-        var medicin = await _db.Medicins.FindAsync(id);
+        var medicin = await _repo.GetByIdAsync(id);
 
         if (medicin is null)
             return NotFound();
 
         medicin.Time = request.Time;
-        await _db.SaveChangesAsync();
+        await _repo.SaveChangesAsync();
 
         //Log medicin time updated
-        await _db.AuditLogs.AddAsync(new AuditLog
+        await _auditLog.AddAsync(new AuditLog
         {
             LogType  = "Activity",
             Action   = "Medicin tid opdateret",
@@ -105,7 +106,7 @@ public class MedicinController : ControllerBase
             UserId   = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
             UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
         });
-        await _db.SaveChangesAsync();
+        await _auditLog.SaveChangesAsync();
 
         return NoContent();
     }

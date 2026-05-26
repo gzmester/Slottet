@@ -1,8 +1,7 @@
 using Application.DTOs.Location;
+using Application.Interfaces.Repositories;
 using Domain.Entities;
-using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
@@ -11,35 +10,26 @@ namespace API.Controllers;
 [Route("api/[controller]")]
 public class LocationsController : ControllerBase
 {
-    private readonly ApplicationDbContext _db;
+    private readonly ILocationRepository _repo;
 
-    public LocationsController(ApplicationDbContext db)
+    public LocationsController(ILocationRepository repo)
     {
-        _db = db;
+        _repo = repo;
     }
 
     // GET /api/locations
     [HttpGet]
     public async Task<ActionResult<IEnumerable<LocationResponseDto>>> GetAll()
     {
-        var locations = await _db.Locations
-            .Select(l => new LocationResponseDto
-            {
-                LocationID = l.LocationID,
-                Name       = l.Name,
-                Address    = l.Address,
-                ZipCode    = l.ZipCode
-            })
-            .ToListAsync();
-
-        return Ok(locations);
+        var locations = await _repo.GetAllAsync();
+        return Ok(locations.Select(MapToResponseDto));
     }
 
     // GET /api/locations/{id}
     [HttpGet("{id}")]
     public async Task<ActionResult<LocationResponseDto>> GetById(int id)
     {
-        var location = await _db.Locations.FindAsync(id);
+        var location = await _repo.GetByIdAsync(id);
 
         if (location is null)
             return NotFound();
@@ -58,8 +48,8 @@ public class LocationsController : ControllerBase
             ZipCode = dto.ZipCode
         };
 
-        _db.Locations.Add(location);
-        await _db.SaveChangesAsync();
+        _repo.Add(location);
+        await _repo.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetById), new { id = location.LocationID }, MapToResponseDto(location));
     }
@@ -68,7 +58,7 @@ public class LocationsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<LocationResponseDto>> Update(int id, LocationUpdateDto dto)
     {
-        var location = await _db.Locations.FindAsync(id);
+        var location = await _repo.GetByIdAsync(id);
 
         if (location is null)
             return NotFound();
@@ -77,7 +67,7 @@ public class LocationsController : ControllerBase
         location.Address = dto.Address;
         location.ZipCode = dto.ZipCode;
 
-        await _db.SaveChangesAsync();
+        await _repo.SaveChangesAsync();
 
         return Ok(MapToResponseDto(location));
     }
@@ -86,13 +76,13 @@ public class LocationsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var location = await _db.Locations.FindAsync(id);
+        var location = await _repo.GetByIdAsync(id);
 
         if (location is null)
             return NotFound();
 
-        _db.Locations.Remove(location);
-        await _db.SaveChangesAsync();
+        _repo.Remove(location);
+        await _repo.SaveChangesAsync();
 
         return NoContent();
     }

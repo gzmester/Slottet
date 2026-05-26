@@ -8,8 +8,8 @@ using System.Text;
 using Domain.Entities;
 using Domain.Enums;
 using Application.DTOs.Authorization;
+using Application.Interfaces.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Infrastructure.Data;
 
 namespace API.Controllers;
 
@@ -20,18 +20,18 @@ public class AuthController : ControllerBase
     private readonly UserManager<Employee> _userManager;
     private readonly SignInManager<Employee> _signInManager;
     private readonly IConfiguration _config;
-    private readonly ApplicationDbContext _db;
+    private readonly IAuditLogRepository _auditLog;
 
     public AuthController(
         UserManager<Employee> userManager,
         SignInManager<Employee> signInManager,
         IConfiguration config,
-        ApplicationDbContext db)
+        IAuditLogRepository auditLog)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _config = config;
-        _db = db;
+        _auditLog = auditLog;
     }
 
     /// <summary>
@@ -95,7 +95,7 @@ public class AuthController : ControllerBase
         var employeeName = $"{user.FirstName} {user.LastName}".Trim();
 
         // 7. Log successful login
-        await _db.AuditLogs.AddAsync(new AuditLog
+        await _auditLog.AddAsync(new AuditLog
         {
             LogType = "Access",
             Action = "Bruger logget ind",
@@ -104,7 +104,7 @@ public class AuthController : ControllerBase
             UserId = user.Id,
             UserName = employeeName
         });
-        await _db.SaveChangesAsync();
+        await _auditLog.SaveChangesAsync();
 
         // 8. Return comprehensive response
         return Ok(new AuthResponseDto
@@ -164,7 +164,7 @@ public class AuthController : ControllerBase
         }
 
         // Log pincode setup
-        await _db.AuditLogs.AddAsync(new AuditLog
+        await _auditLog.AddAsync(new AuditLog
         {
             LogType = "Access",
             Action = "Pinkode oprettet",
@@ -173,7 +173,7 @@ public class AuthController : ControllerBase
             UserId = user.Id,
             UserName = $"{user.FirstName} {user.LastName}"
         });
-        await _db.SaveChangesAsync();
+        await _auditLog.SaveChangesAsync();
 
         return Ok(new { message = "Pinkode oprettet succesfuldt." });
     }
@@ -205,7 +205,7 @@ public class AuthController : ControllerBase
             return BadRequest(addResult.Errors);
 
         // Log role assignment
-        await _db.AuditLogs.AddAsync(new AuditLog
+        await _auditLog.AddAsync(new AuditLog
         {
             LogType = "Access",
             Action = $"Rolle ændret til {model.Role}",
@@ -214,7 +214,7 @@ public class AuthController : ControllerBase
             UserId = user.Id,
             UserName = $"{user.FirstName} {user.LastName}"
         });
-        await _db.SaveChangesAsync();
+        await _auditLog.SaveChangesAsync();
 
         return Ok(new { message = $"Rolle '{model.Role}' tildelt til {user.FirstName} {user.LastName}." });
     }
@@ -257,7 +257,7 @@ public class AuthController : ControllerBase
 
     private async Task LogFailedLogin(string email, string? action = null)
     {
-        await _db.AuditLogs.AddAsync(new AuditLog
+        await _auditLog.AddAsync(new AuditLog
         {
             LogType = "Access",
             Action = action ?? "Login forsøg fejlet",
@@ -266,6 +266,6 @@ public class AuthController : ControllerBase
             UserId = null,
             UserName = email
         });
-        await _db.SaveChangesAsync();
+        await _auditLog.SaveChangesAsync();
     }
 }

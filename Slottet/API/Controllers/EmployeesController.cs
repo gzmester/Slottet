@@ -1,7 +1,7 @@
 using Application.DTOs.Employee;
+using Application.Interfaces.Repositories;
 using Domain.Entities;
 using Domain.Enums;
-using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -15,12 +15,23 @@ namespace API.Controllers;
 public class EmployeesController : ControllerBase
 {
     private readonly UserManager<Employee> _userManager;
-    private readonly ApplicationDbContext _db;
+    private readonly IEmployeeRepository _empRepo;
+    private readonly ILocationRepository _locationRepo;
+    private readonly IAuthorizationRepository _authRepo;
+    private readonly IAuditLogRepository _auditLog;
 
-    public EmployeesController(UserManager<Employee> userManager, ApplicationDbContext db)
+    public EmployeesController(
+        UserManager<Employee> userManager,
+        IEmployeeRepository empRepo,
+        ILocationRepository locationRepo,
+        IAuthorizationRepository authRepo,
+        IAuditLogRepository auditLog)
     {
-        _userManager = userManager;
-        _db = db;
+        _userManager  = userManager;
+        _empRepo      = empRepo;
+        _locationRepo = locationRepo;
+        _authRepo     = authRepo;
+        _auditLog     = auditLog;
     }
 
     // Helper: Current user ID from JWT
@@ -74,7 +85,7 @@ public class EmployeesController : ControllerBase
     [Authorize(Policy = "RequireAdmin")]
     public async Task<ActionResult<EmployeeResponseDto>> Create(EmployeeCreateDto dto)
     {
-        var locationExists = await _db.Locations.AnyAsync(l => l.LocationID == dto.LocationID);
+        var locationExists = await _locationRepo.ExistsAsync(dto.LocationID);
         if (!locationExists)
             return BadRequest($"Location med ID {dto.LocationID} findes ikke.");
 
@@ -103,7 +114,7 @@ public class EmployeesController : ControllerBase
         await _userManager.AddToRoleAsync(employee, dto.Role);
 
         // Log oprettelsen
-        await _db.AuditLogs.AddAsync(new AuditLog
+        await _auditLog.AddAsync(new AuditLog
         {
             LogType = "Activity",
             Action = "Medarbejder oprettet",
@@ -112,10 +123,9 @@ public class EmployeesController : ControllerBase
             UserId = CurrentUserId,
             UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
         });
-        await _db.SaveChangesAsync();
+        await _auditLog.SaveChangesAsync();
 
-        // Hent den oprettede medarbejder med navigation properties
-        await _db.Entry(employee).Reference(e => e.Location).LoadAsync();
+        await _empRepo.LoadLocationAsync(employee);
 
         var createdRoles = await _userManager.GetRolesAsync(employee);
         return CreatedAtAction(nameof(GetById), new { id = employee.Id }, MapToResponseDto(employee, createdRoles.ToList()));
@@ -134,11 +144,11 @@ public class EmployeesController : ControllerBase
         if (employee is null)
             return NotFound();
 
-        var locationExists = await _db.Locations.AnyAsync(l => l.LocationID == dto.LocationID);
+        var locationExists = await _locationRepo.ExistsAsync(dto.LocationID);
         if (!locationExists)
             return BadRequest($"Location med ID {dto.LocationID} findes ikke.");
 
-        var authorizationExists = await _db.Authorizations.AnyAsync(a => a.AuthorizationID == dto.AuthorizationID);
+        var authorizationExists = await _authRepo.ExistsAsync(dto.AuthorizationID);
         if (!authorizationExists)
             return BadRequest($"Authorization med ID {dto.AuthorizationID} findes ikke.");
 
@@ -162,7 +172,7 @@ public class EmployeesController : ControllerBase
         await _userManager.UpdateAsync(employee);
 
         // Log opdateringen
-        await _db.AuditLogs.AddAsync(new AuditLog
+        await _auditLog.AddAsync(new AuditLog
         {
             LogType = "Activity",
             Action = "Medarbejder opdateret",
@@ -171,7 +181,7 @@ public class EmployeesController : ControllerBase
             UserId = CurrentUserId,
             UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
         });
-        await _db.SaveChangesAsync();
+        await _auditLog.SaveChangesAsync();
 
         return Ok(MapToResponseDto(employee));
     }
@@ -190,7 +200,7 @@ public class EmployeesController : ControllerBase
 
         await _userManager.DeleteAsync(employee);
 
-        await _db.AuditLogs.AddAsync(new AuditLog
+        await _auditLog.AddAsync(new AuditLog
         {
             LogType  = "GDPR",
             Action   = $"GDPR sletning: Medarbejder '{name}' (ID {id}) og al tilknyttet data er permanent slettet.",
@@ -199,7 +209,7 @@ public class EmployeesController : ControllerBase
             UserId   = null,
             UserName = "unknown"
         });
-        await _db.SaveChangesAsync();
+        await _auditLog.SaveChangesAsync();
 
         return NoContent();
     }
@@ -210,43 +220,30 @@ public class EmployeesController : ControllerBase
     [Authorize(Policy = "RequireCareStaff")]
     public async Task<ActionResult<IEnumerable<object>>> GetJobRoles()
     {
-        var roles = await _db.ResponsibilityRoles
-            .Select(r => new { r.RoleID, r.Name, r.ResponsibilityArea })
-            .ToListAsync();
-        return Ok(roles);
+        var roles = await _empRepo.GetJobRolesAsync();
+        return Ok(roles.Select(r => new { r.RoleID, r.Name, r.ResponsibilityArea }));
     }
     // PUT /api/employees/{id}/job-roles — Tildel ansvarsomraader
     [HttpPut("{id}/job-roles")]
     [Authorize(Policy = "RequireAdmin")]
     public async Task<IActionResult> UpdateJobRoles(int id, [FromBody] List<string> jobRoleNames)
     {
-        var employee = await _userManager.Users
-            .Include(e => e.Roles)
-            .FirstOrDefaultAsync(e => e.Id == id);
+        var employee = await _empRepo.GetWithRolesAsync(id);
 
         if (employee is null)
             return NotFound();
 
-        // Hent alle tilgaengelige Role-entiteter (ansvarsomraader)
-        var allJobRoles = await _db.ResponsibilityRoles.ToListAsync();
+        var allJobRoles = (await _empRepo.GetJobRolesAsync()).ToList();
         var validNames = allJobRoles.Select(r => r.Name).ToHashSet();
 
-        // Valider
         foreach (var name in jobRoleNames)
         {
             if (!validNames.Contains(name))
                 return BadRequest($"Ugyldigt ansvarsomraade: {name}. Gyldige: {string.Join(", ", validNames)}");
         }
 
-        // Fjern eksisterende, tilfoej nye
-        employee.Roles.Clear();
-        foreach (var name in jobRoleNames)
-        {
-            var role = allJobRoles.First(r => r.Name == name);
-            employee.Roles.Add(role);
-        }
-
-        await _db.SaveChangesAsync();
+        var selectedRoles = allJobRoles.Where(r => jobRoleNames.Contains(r.Name)).ToList();
+        await _empRepo.ClearAndSetJobRolesAsync(employee, selectedRoles);
 
         return Ok(new { message = "Ansvarsomraader opdateret." });
     }

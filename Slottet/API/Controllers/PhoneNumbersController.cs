@@ -1,8 +1,7 @@
 using Application.DTOs.PhoneNumber;
+using Application.Interfaces.Repositories;
 using Domain.Entities;
-using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
@@ -14,18 +13,20 @@ namespace API.Controllers;
 
 public class PhoneNumberController : ControllerBase
 {
-    private readonly ApplicationDbContext _db;
+    private readonly IPhoneNumberRepository _repo;
+    private readonly IAuditLogRepository _auditLog;
 
-    public PhoneNumberController(ApplicationDbContext db)
+    public PhoneNumberController(IPhoneNumberRepository repo, IAuditLogRepository auditLog)
     {
-        _db = db;
+        _repo     = repo;
+        _auditLog = auditLog;
     }
 
     // Get /api/phonenumbers
     [HttpGet]
     public async Task<ActionResult<IEnumerable<PhoneNumberResponseDto>>> GetAll()
     {
-        var phoneNumbers = await _db.PhoneNumbers.ToListAsync();
+        var phoneNumbers = await _repo.GetAllAsync();
 
         var result = phoneNumbers.Select(MapToResponseDto);
 
@@ -37,7 +38,7 @@ public class PhoneNumberController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<PhoneNumberResponseDto>> GetById(int id)
     {
-        var phoneNumber = await _db.PhoneNumbers.FirstOrDefaultAsync(p => p.Id == id);
+        var phoneNumber = await _repo.GetByIdAsync(id);
 
         if(phoneNumber is null) return NotFound();
 
@@ -53,11 +54,10 @@ public class PhoneNumberController : ControllerBase
             Number = dto.Number
         };
 
-        _db.PhoneNumbers.Add(phoneNumber);
-        await _db.SaveChangesAsync();
+        _repo.Add(phoneNumber);
+        await _repo.SaveChangesAsync();
 
-        //Log oprettelsen i AuditLog
-        await _db.AuditLogs.AddAsync(new AuditLog
+        await _auditLog.AddAsync(new AuditLog
         {
             LogType = "Activity",
             Action = "Telefonnummer oprettet",
@@ -66,7 +66,7 @@ public class PhoneNumberController : ControllerBase
             UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
             UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
         });
-        await _db.SaveChangesAsync();
+        await _auditLog.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetById), new { id = phoneNumber.Id }, MapToResponseDto(phoneNumber));
     }
@@ -75,16 +75,15 @@ public class PhoneNumberController : ControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<PhoneNumberResponseDto>> Update(int id, PhoneNumberUpdateDto dto)
     {
-        var phoneNumber = await _db.PhoneNumbers.FirstOrDefaultAsync(p => p.Id == id);
+        var phoneNumber = await _repo.GetByIdAsync(id);
 
         if (phoneNumber is null) return NotFound();
 
         phoneNumber.Number = dto.Number;
 
-        await _db.SaveChangesAsync();
+        await _repo.SaveChangesAsync();
 
-        //Log opdateringen i AuditLog
-        await _db.AuditLogs.AddAsync(new AuditLog
+        await _auditLog.AddAsync(new AuditLog
         {
             LogType = "Activity",
             Action = "Telefonnummer opdateret",
@@ -93,7 +92,7 @@ public class PhoneNumberController : ControllerBase
             UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
             UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
         });
-        await _db.SaveChangesAsync();
+        await _auditLog.SaveChangesAsync();
 
         return Ok(MapToResponseDto(phoneNumber));
     }
@@ -102,15 +101,14 @@ public class PhoneNumberController : ControllerBase
     [HttpPatch("{id}/assignment")]
     public async Task<ActionResult<PhoneNumberResponseDto>> UpdateAssignment(int id, [FromBody] int? assignedTo)
     {
-        var phoneNumber = await _db.PhoneNumbers.FirstOrDefaultAsync(p => p.Id == id);
+        var phoneNumber = await _repo.GetByIdAsync(id);
 
         if(phoneNumber is null) return NotFound();
 
         phoneNumber.AssignedTo = assignedTo;
-        await _db.SaveChangesAsync();
+        await _repo.SaveChangesAsync();
 
-        //Log opdateringen i AuditLog
-        await _db.AuditLogs.AddAsync(new AuditLog
+        await _auditLog.AddAsync(new AuditLog
         {
             LogType = "Activity",
             Action = "Tilkoblet medarbejder til telefonnummer",
@@ -119,7 +117,7 @@ public class PhoneNumberController : ControllerBase
             UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
             UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
         });
-        await _db.SaveChangesAsync();
+        await _auditLog.SaveChangesAsync();
 
         return Ok(MapToResponseDto(phoneNumber));
     }
@@ -128,15 +126,14 @@ public class PhoneNumberController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var phoneNumber = await _db.PhoneNumbers.FirstOrDefaultAsync(p => p.Id == id);
+        var phoneNumber = await _repo.GetByIdAsync(id);
 
         if(phoneNumber is null) return NotFound();
 
-        _db.PhoneNumbers.Remove(phoneNumber);
-        await _db.SaveChangesAsync();
+        _repo.Remove(phoneNumber);
+        await _repo.SaveChangesAsync();
 
-        //Log sletningen i AuditLog
-        await _db.AuditLogs.AddAsync(new AuditLog
+        await _auditLog.AddAsync(new AuditLog
         {
             LogType = "Activity",
             Action = "Telefonnummer slettet",
@@ -145,7 +142,7 @@ public class PhoneNumberController : ControllerBase
             UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
             UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
         });
-        await _db.SaveChangesAsync();
+        await _auditLog.SaveChangesAsync();
 
         return NoContent();
     }

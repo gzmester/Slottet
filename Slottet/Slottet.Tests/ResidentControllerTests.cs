@@ -3,6 +3,7 @@ using Application.DTOs.Resident;
 using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Data;
+using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -23,7 +24,9 @@ public class ResidentControllerTests : IDisposable
             .Options;
 
         _db = new ApplicationDbContext(options);
-        _controller = new ResidentController(_db);
+        _controller = new ResidentController(
+            new ResidentRepository(_db),
+            new AuditLogRepository(_db));
 
         SeedData();
     }

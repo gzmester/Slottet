@@ -1,9 +1,8 @@
+using Application.Interfaces.Repositories;
 using Domain.Entities;
 using Domain.Enums;
-using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace API.Controllers;
@@ -12,11 +11,11 @@ namespace API.Controllers;
 [Route("api/[controller]")]
 public class ShiftsController : ControllerBase
 {
-    private readonly ApplicationDbContext _db;
+    private readonly IShiftRepository _repo;
 
-    public ShiftsController(ApplicationDbContext db)
+    public ShiftsController(IShiftRepository repo)
     {
-        _db = db;
+        _repo = repo;
     }
 
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
@@ -39,14 +38,13 @@ public class ShiftsController : ControllerBase
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         // Tjek om der allerede er en vagt i dag for denne medarbejder
-        var existingShift = await _db.Shifts
-            .FirstOrDefaultAsync(s => s.EmployeeID == employeeId && s.Date == today);
+        var existingShift = await _repo.GetTodayForEmployeeAsync(employeeId, today);
 
         if (existingShift != null)
         {
             // Opdater eksisterende vagt
             existingShift.ShiftType = dto.ShiftType;
-            await _db.SaveChangesAsync();
+            await _repo.SaveChangesAsync();
             return Ok(new { shiftId = existingShift.ShiftID, shiftType = existingShift.ShiftType.ToString(), date = existingShift.Date.ToString("yyyy-MM-dd") });
         }
 
@@ -58,8 +56,8 @@ public class ShiftsController : ControllerBase
             EmployeeID = employeeId
         };
 
-        _db.Shifts.Add(shift);
-        await _db.SaveChangesAsync();
+        _repo.Add(shift);
+        await _repo.SaveChangesAsync();
 
         return Ok(new { shiftId = shift.ShiftID, shiftType = shift.ShiftType.ToString(), date = shift.Date.ToString("yyyy-MM-dd") });
     }
@@ -70,8 +68,7 @@ public class ShiftsController : ControllerBase
     public async Task<IActionResult> GetTodayShift()
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var shift = await _db.Shifts
-            .FirstOrDefaultAsync(s => s.EmployeeID == CurrentUserId && s.Date == today);
+        var shift = await _repo.GetTodayForEmployeeAsync(CurrentUserId, today);
 
         if (shift == null)
             return Ok(new { shiftType = (string?)null });

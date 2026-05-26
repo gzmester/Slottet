@@ -2,6 +2,7 @@ using API.Controllers;
 using Application.DTOs.DepartmentTask;
 using Domain.Entities;
 using Infrastructure.Data;
+using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -23,7 +24,7 @@ public class DepartmentTasksControllerTests : IDisposable
             .Options;
 
         _db = new ApplicationDbContext(options);
-        _controller = new DepartmentTasksController(_db);
+        _controller = new DepartmentTasksController(new DepartmentTasksRepository(_db));
     }
 
     [Fact]

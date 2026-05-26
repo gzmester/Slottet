@@ -1,8 +1,6 @@
 using Application.DTOs.AuditLog;
-using Domain.Entities;
-using Infrastructure.Data;
+using Application.Interfaces.Repositories;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
@@ -10,35 +8,29 @@ namespace API.Controllers;
 [Route("api/[controller]")]
 public class AuditLogController : ControllerBase
 {
-    private readonly ApplicationDbContext _db;
+    private readonly IAuditLogRepository _repo;
 
-    public AuditLogController(ApplicationDbContext db)
+    public AuditLogController(IAuditLogRepository repo)
     {
-        _db = db;
+        _repo = repo;
     }
 
     // GET /api/auditlog
     [HttpGet]
     public async Task<ActionResult<IEnumerable<AuditLogResponseDto>>> GetAll()
     {
-        //henter alle logs fra databasen sorteret efter faldende dato fra den nyeste
-        // Så nyeste logs vises først
-        var logs = await _db.AuditLogs
-            .OrderByDescending(log => log.TimeStamp)
-            //mapper entity til DTO
-            .Select(log => new AuditLogResponseDto
-            {
-                AuditId = log.AuditId,
-                LogType = log.LogType,
-                Action = log.Action,
-                Entity = log.Entity,
-                EntityId = log.EntityId,
-                UserId = log.UserId,
-                UserName = log.UserName,
-                TimeStamp = log.TimeStamp
-            })
-            .ToListAsync();
+        var logs = await _repo.GetAllAsync();
 
-        return Ok(logs);
+        return Ok(logs.Select(log => new AuditLogResponseDto
+        {
+            AuditId   = log.AuditId,
+            LogType   = log.LogType,
+            Action    = log.Action,
+            Entity    = log.Entity,
+            EntityId  = log.EntityId,
+            UserId    = log.UserId,
+            UserName  = log.UserName,
+            TimeStamp = log.TimeStamp
+        }));
     }
 }

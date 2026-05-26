@@ -1,8 +1,7 @@
 using Application.DTOs.DepartmentTask;
+using Application.Interfaces.Repositories;
 using Domain.Entities;
-using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
@@ -10,18 +9,18 @@ namespace API.Controllers;
 [Route("api/[controller]")]
 public class DepartmentTasksController : ControllerBase
 {
-    private readonly ApplicationDbContext _db;
+    private readonly IDepartmentTasksRepository _repo;
 
-    public DepartmentTasksController(ApplicationDbContext db)
+    public DepartmentTasksController(IDepartmentTasksRepository repo)
     {
-        _db = db;
+        _repo = repo;
     }
 
     // GET /api/departmenttasks
     [HttpGet]
     public async Task<ActionResult<IEnumerable<DepartmentTaskResponseDto>>> GetAll()
     {
-        var tasks = await _db.DepartmentTasks.ToListAsync();
+        var tasks = await _repo.GetAllAsync();
         return Ok(tasks.Select(MapToDto));
     }
 
@@ -30,8 +29,8 @@ public class DepartmentTasksController : ControllerBase
     public async Task<ActionResult<DepartmentTaskResponseDto>> Create(DepartmentTaskCreateDto dto)
     {
         var task = new DepartmentTask { Name = dto.Name };
-        _db.DepartmentTasks.Add(task);
-        await _db.SaveChangesAsync();
+        _repo.Add(task);
+        await _repo.SaveChangesAsync();
         return CreatedAtAction(nameof(GetAll), MapToDto(task));
     }
 
@@ -39,11 +38,11 @@ public class DepartmentTasksController : ControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<DepartmentTaskResponseDto>> Update(int id, DepartmentTaskUpdateDto dto)
     {
-        var task = await _db.DepartmentTasks.FindAsync(id);
+        var task = await _repo.GetByIdAsync(id);
         if (task is null) return NotFound();
 
         task.Name = dto.Name;
-        await _db.SaveChangesAsync();
+        await _repo.SaveChangesAsync();
         return Ok(MapToDto(task));
     }
 
@@ -51,11 +50,11 @@ public class DepartmentTasksController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var task = await _db.DepartmentTasks.FindAsync(id);
+        var task = await _repo.GetByIdAsync(id);
         if (task is null) return NotFound();
 
-        _db.DepartmentTasks.Remove(task);
-        await _db.SaveChangesAsync();
+        _repo.Remove(task);
+        await _repo.SaveChangesAsync();
         return NoContent();
     }
 

@@ -1,8 +1,7 @@
-using Infrastructure.Data;
+using Application.Interfaces.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Domain.Entities;
 using Application.DTOs.Resident;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
@@ -13,11 +12,13 @@ namespace API.Controllers;
 [Route("api/[controller]")]
 public class PNMedicinController : ControllerBase
 {
-    private readonly ApplicationDbContext _db;
+    private readonly IPNMedicinRepository _repo;
+    private readonly IAuditLogRepository _auditLog;
 
-    public PNMedicinController(ApplicationDbContext db)
+    public PNMedicinController(IPNMedicinRepository repo, IAuditLogRepository auditLog)
     {
-        _db = db;
+        _repo     = repo;
+        _auditLog = auditLog;
     }
 
     // PUT /api/pnmedicin/{id}
@@ -26,19 +27,16 @@ public class PNMedicinController : ControllerBase
     public async Task<IActionResult> UpdatePNMedicin(int id, [FromBody] UpdatePNMedicinRequest request)
     {
         //Find pn medicinen i databasen
-        var pnmedicin = await _db.PNMedicins.FindAsync(id);
+        var pnmedicin = await _repo.GetByIdAsync(id);
 
-        //Hvis pn medicinen ikke findes, returneres 404 not found
         if (pnmedicin is null)
             return NotFound();
 
-        //Opdatere pn medicinen med de nye værdier
         pnmedicin.Time = request.Time;
         pnmedicin.Type = request.Type;
-        await _db.SaveChangesAsync();
+        await _repo.SaveChangesAsync();
 
-        //Log pnmedicin time updated
-        await _db.AuditLogs.AddAsync(new AuditLog
+        await _auditLog.AddAsync(new AuditLog
         {
             LogType  = "Activity",
             Action   = "PN-Medicin tid opdateret",
@@ -47,9 +45,8 @@ public class PNMedicinController : ControllerBase
             UserId   = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
             UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
         });
-        await _db.SaveChangesAsync();
+        await _auditLog.SaveChangesAsync();
 
-        //Returnere No content når opdateringen er klaret
         return NoContent();
     }
 
@@ -67,11 +64,10 @@ public class PNMedicinController : ControllerBase
         };
 
         //Gem PN i databasen
-        _db.PNMedicins.Add(pnmedicin);
-        await _db.SaveChangesAsync();
+        _repo.Add(pnmedicin);
+        await _repo.SaveChangesAsync();
 
-        //Log oprettelsen i AuditLog
-        await _db.AuditLogs.AddAsync(new AuditLog
+        await _auditLog.AddAsync(new AuditLog
         {
             LogType = "Activity",
             Action = "PN-Medicin Tilføjet",
@@ -80,7 +76,7 @@ public class PNMedicinController : ControllerBase
             UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0"),
             UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"
         });
-        await _db.SaveChangesAsync();
+        await _auditLog.SaveChangesAsync();
 
         //Returnere den oprettede PN medicin som dto
         return Ok(MapToResponseDto(pnmedicin));
