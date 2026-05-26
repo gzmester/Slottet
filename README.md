@@ -100,7 +100,7 @@ Starter paa http://localhost:5140. Laeder ApiBaseUrl fra appsettings.json (stand
 
 ### 4. Databasemigrationer
 
-Migrationer koerer automatisk ved API-opstart. For manuel koersel:
+Migrationer kører automatisk ved API-opstart. For manuel kørrsel:
 
 ```
 cd Slottet/API
@@ -111,7 +111,7 @@ dotnet ef database update
 
 ## Docker-deployment (distribueret)
 
-API'et og Blazor koerer som separate containere paa et internt bridge-netvaerk. Blazor kalder API'et via det interne container-hostname slottet-api.
+API'et og Blazor kører som separate containere paa et internt bridge-netvaerk. Blazor kalder API'et via det interne container-hostname slottet-api.
 
 ### 1. Konfigurer .env
 
